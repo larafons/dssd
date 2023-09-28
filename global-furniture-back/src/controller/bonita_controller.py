@@ -12,6 +12,56 @@ def login():
 def getall():
     return Process.get_all_processes()
 
+@app.route('/getprocessname/<int:process_id>', methods=['GET'])
+def get_process_name(process_id):
+    return Process.get_process_name(process_id)
+
+@app.route('/getprocessid/<string:process_name>', methods=['GET'])
+def get_process_id(process_name):
+    return Process.get_process_id(process_name)
+
+@app.route('/getcountprocesses', methods=['GET'])
+def get_count_processes():
+    return str(Process.get_count_processes())
+
+@app.route('/initiateprocess/<int:process_id>', methods=['POST'])
+def initiate_process(process_id):
+    response = Process.initiate_process(process_id)
+    return jsonify(response.json())
+
+@app.route('/setvariable/<int:task_id>/<string:variable>/<value>/<string:tipo>', methods=['PUT'])
+def set_variable(task_id, variable, value, tipo):
+    response = Process.set_variable(task_id, variable, value, tipo)
+    return jsonify(response.json())
+
+@app.route('/setvariablebycase/<int:case_id>/<string:variable>/<value>/<string:tipo>', methods=['PUT'])
+def set_variable_by_case(case_id, variable, value, tipo):
+    response = Process.set_variable_by_case(case_id, variable, value, tipo)
+    return jsonify(response.json())
+
+@app.route('/assigntask/<int:task_id>/<int:user_id>', methods=['PUT'])
+def assign_task(task_id, user_id):
+    response = Process.assign_task(task_id, user_id)
+    return jsonify(response.json())
+
+@app.route('/searchactivitybycase/<int:case_id>', methods=['GET'])
+def search_activity_by_case(case_id):
+    response = Process.search_activity_by_case(case_id)
+    return jsonify(response.json())
+
+@app.route('/completeactivity/<int:task_id>', methods=['POST'])
+def complete_activity(task_id):
+    response = Process.complete_activity(task_id)
+    return jsonify(response.json())
+
+@app.route('/getvariable/<int:task_id>/<string:variable>', methods=['GET'])
+def get_variable(task_id, variable):
+    return jsonify(Process.get_variable(task_id, variable))
+
+@app.route('/getvariablebycase/<int:case_id>/<string:variable>', methods=['GET'])
+def get_variable_by_case(case_id, variable):
+    return jsonify(Process.get_variable_by_case(case_id, variable))
+
 class Process:
     @staticmethod
     def login():
