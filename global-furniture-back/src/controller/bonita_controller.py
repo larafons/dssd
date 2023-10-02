@@ -4,6 +4,8 @@ import requests
 app = Flask(__name__)
 base_url= "http://localhost:8080/bonita/"
 
+cookieJar = requests.Session()
+
 @app.route('/login', methods=['POST'])
 def login():
     return Process.login()
@@ -66,8 +68,6 @@ class Process:
     @staticmethod
     def login():
         try:
-            # Crear una cookie jar para almacenar las cookies
-            cookieJar = requests.Session()
             # Realizar la solicitud POST al servicio de inicio de sesión
             login_url = f"{base_url}/loginservice"
             payload = {
@@ -81,9 +81,11 @@ class Process:
             if response.status_code == 204:
                 # Almacenar el token de Bonita en una variable de sesión
                 token = cookieJar.cookies.get("X-Bonita-API-Token")
+                jSessionId = cookieJar.cookies.get("JSESSIONID")
                 print(token)
+                print("---------------------")
+                print(jSessionId)
                 if token:
-                    print('entra')
                     # Almacenar el token en una variable de sesión
                     session_token = token
                     return session_token
@@ -98,9 +100,14 @@ class Process:
 
     @staticmethod
     def get_all_processes():
-        response = requests.get(f"{base_url}/API/bpm/process?p=0&c=1000")
-        print(response)
-        return response.json()
+        try:
+            print(cookieJar.cookies)
+            # Utiliza la misma instancia de cookieJar creada en login()
+            response = cookieJar.get(f"{base_url}API/bpm/process?p=0&c=1000")
+            return response.json()
+        except requests.exceptions.RequestException as e:
+            print(f"Error al hacer la solicitud: {str(e)}")
+            return None
 
     @staticmethod
     def get_process_name(process_id):
