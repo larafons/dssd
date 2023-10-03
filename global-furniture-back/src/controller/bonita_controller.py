@@ -100,7 +100,6 @@ class Process:
     @staticmethod
     def get_all_processes():
         try:
-            print(cookieJar.cookies)
             # Utiliza la misma instancia de cookieJar creada en login()
             response = cookieJar.get(f"{base_url}API/bpm/process?p=0&c=1000")
             return response.json()
@@ -132,15 +131,11 @@ class Process:
     @staticmethod
     def initiate_process(process_id):
         try:
-            payload = {
-                "ticket_account": "CustomerA",
-                "ticket_description": "issue description",
-                "ticket_subject": "Issue 1"
-            }
             strprocess_id = str(process_id)
-            print(cookieJar.headers)
+            cookieJar.headers.update({
+                    'X-Bonita-API-Token': cookieJar.cookies.get("X-Bonita-API-Token")
+                })
             response = cookieJar.post(f"{base_url}API/bpm/process/{strprocess_id}/instantiation")
-            print(response)
             return response
         except requests.exceptions.RequestException as e:
             print(f"Error al hacer la solicitud: {str(e)}")
