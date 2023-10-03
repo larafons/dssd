@@ -8,7 +8,10 @@ cookieJar = requests.Session()
 
 @app.route('/login', methods=['POST'])
 def login():
-    return Process.login()
+    body = request.get_json()
+    username= body.get('username')
+    password= body.get('password')
+    return Process.login(username, password)
 
 @app.route('/getall', methods=['GET'])
 def getall():
@@ -66,13 +69,13 @@ def get_variable_by_case(case_id, variable):
 
 class Process:
     @staticmethod
-    def login():
+    def login(username, password):
         try:
             # Realizar la solicitud POST al servicio de inicio de sesión
             login_url = f"{base_url}/loginservice"
             payload = {
-                "username": "walter.bates",
-                "password": "bpm",
+                "username": username,
+                "password": password,
                 "redirect": "false"
             }
 

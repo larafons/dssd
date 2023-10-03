@@ -4,13 +4,28 @@ import requests
 app = Flask(__name__)
 base_url = "http://localhost:5000"  # Reemplaza con la URL de tu backend
 
-@app.route('/design_collection')
-def index():
-    return render_template('form.html')
+@app.route('/login', methods=['GET'])
+def login():
+    return render_template('login.html')
 
 @app.route('/design_collection')
 def index():
     return render_template('form.html')
+
+@app.route('/login', methods=['POST'])
+def submitlogin():
+    username = request.form.get('username')
+    password = request.form.get('password')
+    print(password)
+
+    data = {
+        "username": username,
+        "password": password
+    }
+    # Enviar los datos al backend para el inicio de sesión
+    response = requests.post(f"{base_url}/login", json=data)
+    if response.status_code == 200:
+        return redirect('/design_collection')
 
 @app.route('/submit', methods=['POST'])
 def submit():
