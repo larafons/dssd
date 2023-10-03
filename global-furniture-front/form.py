@@ -8,6 +8,10 @@ base_url = "http://localhost:5000"  # Reemplaza con la URL de tu backend
 def index():
     return render_template('form.html')
 
+@app.route('/design_collection')
+def index():
+    return render_template('form.html')
+
 @app.route('/submit', methods=['POST'])
 def submit():
     # Obtener los datos del formulario
@@ -18,14 +22,16 @@ def submit():
         "fecha_lanzamiento": request.form.get('fecha_lanzamiento'),
         "informacion_adicional": request.form.get('informacion_adicional')
     }
-
+    # Harcodeamos el nombre del pool
+    response = request.get(f"{base_url}/get_process_id/entrega-1")
+    print(response)
     # Enviar los datos al backend para iniciar el proceso
-    response = requests.post(f"{base_url}/initiateprocess", json=data)
+    response1 = requests.post(f"{base_url}/initiateprocess", json=data)
 
-    if response.status_code == 200:
+    if response1.status_code == 200:
         return "Proceso iniciado exitosamente"
     else:
         return "Error al iniciar el proceso"
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(port=5001, debug=True)

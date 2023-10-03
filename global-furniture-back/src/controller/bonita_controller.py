@@ -29,7 +29,7 @@ def get_count_processes():
 @app.route('/initiateprocess/<int:process_id>', methods=['POST'])
 def initiate_process(process_id):
     response = Process.initiate_process(process_id)
-    return jsonify(response.json())
+    return response.json()
 
 @app.route('/setvariable/<int:task_id>/<string:variable>/<value>/<string:tipo>', methods=['PUT'])
 def set_variable(task_id, variable, value, tipo):
@@ -77,14 +77,13 @@ class Process:
             }
 
             response = cookieJar.post(login_url, data=payload)
-            print(response)
             if response.status_code == 204:
                 # Almacenar el token de Bonita en una variable de sesión
                 token = cookieJar.cookies.get("X-Bonita-API-Token")
-                jSessionId = cookieJar.cookies.get("JSESSIONID")
-                print(token)
-                print("---------------------")
-                print(jSessionId)
+                cookieJar.headers.update({
+                    'bonita_token': cookieJar.cookies.get("X-Bonita-API-Token"),
+                    'bonita_auth': cookieJar.cookies.get("JSESSIONID")
+                })
                 if token:
                     # Almacenar el token en una variable de sesión
                     session_token = token
@@ -97,7 +96,7 @@ class Process:
         except requests.exceptions.RequestException as e:
             print(f"Error al hacer la solicitud: {str(e)}")
             return None
-
+            
     @staticmethod
     def get_all_processes():
         try:
@@ -111,71 +110,59 @@ class Process:
 
     @staticmethod
     def get_process_name(process_id):
-        response = requests.get(f"{base_url}/API/bpm/process/{process_id}")
+        response = cookieJar.get(f"{base_url}API/bpm/process/{process_id}")
         process = response.json()['data']
         return process['name']
 
     @staticmethod
     def get_process_id(process_name):
-        response = requests.get(f"{base_url}/API/bpm/process?f=name:{process_name}&f=activationState=ENABLED")
-        process = response.json()['data'][0]
-        return process['id']
+        try:
+            response = cookieJar.get(f"{base_url}API/bpm/process?f=name={process_name}&f=activationState=ENABLED")
+            process = response.json()[0]
+            return process["id"]
+        except requests.exceptions.RequestException as e:
+            print(f"Error al hacer la solicitud: {str(e)}")
+            return None
 
     @staticmethod
     def get_count_processes():
-        response = requests.get(f"{base_url}/API/bpm/process?p=0&c=1000")
+        response = cookieJar.get(f"{base_url}API/bpm/process?p=0&c=1000")
         return len(response.json()['data'])
 
     @staticmethod
     def initiate_process(process_id):
-        response = requests.post(f"{base_url}/API/bpm/process/{process_id}/instantiation")
-        return response
+        try:
+            payload = {
+                "ticket_account": "CustomerA",
+                "ticket_description": "issue description",
+                "ticket_subject": "Issue 1"
+            }
+            strprocess_id = str(process_id)
+            print(cookieJar.headers)
+            response = cookieJar.post(f"{base_url}API/bpm/process/{strprocess_id}/instantiation")
+            print(response)
+            return response
+        except requests.exceptions.RequestException as e:
+            print(f"Error al hacer la solicitud: {str(e)}")
+            return None
 
     @staticmethod
     def set_variable(task_id, variable, value, tipo):
-        task_response = requests.get(f"{base_url}/API/bpm/userTask/{task_id}")
+        task_response = cookieJar.get(f"{base_url}API/bpm/userTask/{task_id}")
         case_id = task_response.json()['data']['caseId']
-        response = requests.put(f"{base_url}/API/bp/caseVariable/{case_id}/{variable}", json={variable: value, 'type': tipo})
+        response = cookieJar.put(f"{base_url}API/bp/caseVariable/{case_id}/{variable}", json={variable: value, 'type': tipo})
         return response
 
     @staticmethod
     def set_variable_by_case(case_id, variable, value, tipo):
-        response = requests.put(f"{base_url}/API/bp/caseVariable/{case_id}/{variable}", json={variable: value, 'type': tipo})
+        response = cookieJar.put(f"{base_url}API/bp/caseVariable/{case_id}/{variable}", json={variable: value, 'type': tipo})
         return response
-    
-    @staticmethod
-    def get_process_name(process_id):
-        response = requests.get(f"{base_url}/API/bpm/process/{process_id}")
-        process = response.json()['data']
-        return process['name']
-
-    @staticmethod
-    def get_process_id(process_name):
-        response = requests.get(f"{base_url}API/bpm/process?f=name:{process_name}&p=08c-180-version%20desc&f=activationState=ENABLED")
-        process = response.json()['data'][0]
-        return process['id']
 
     @staticmethod
     def get_count_processes():
-        response = requests.get(f"{base_url}API/bpm/process?p=05c-1000")
+        response = cookieJar.get(f"{base_url}API/bpm/process?p=05c-1000")
         return len(response.json()['data'])
 
-    @staticmethod
-    def initiate_process(process_id):
-        response = requests.post(f"{base_url}API/bpm/process/{process_id}/instantiation")
-        return response
-
-    @staticmethod
-    def set_variable(task_id, variable, value, tipo):
-        task_response = requests.get(f"API/bpm/userTask/{task_id}")
-        case_id = task_response.json()['data']['caseId']
-        response = requests.put(f"{base_url}API/bpm/caseVariable/{case_id}/{variable}", json={variable: value, 'type': tipo})
-        return response
-
-    @staticmethod
-    def set_variable_by_case(case_id, variable, value, tipo):
-        response = requests.put(f"{base_url}API/bp/caseVariable/{case_id}/{variable}", json={variable: value, 'type': tipo})
-        return response
 
     @staticmethod
     def assign_task(task_id, user_id):
