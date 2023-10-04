@@ -1,10 +1,27 @@
 from flask import Flask, request, jsonify
+from functools import wraps
 import requests
 
 app = Flask(__name__)
 base_url= "http://localhost:8080/bonita/"
 
 cookieJar = requests.Session()
+
+def is_user_authenticated():
+    #Se chequea en base al token de bonita
+    return True if cookieJar.cookies.get("X-Bonita-API-Token") else False
+
+# Decorador personalizado
+def login_required(route_function):
+    @wraps(route_function)
+    def decorated_route(*args, **kwargs):
+        # Verifica si el usuario está autenticado
+        if not is_user_authenticated():
+            return jsonify({"error": "Acceso no autorizado"}), 401  # Devuelve un error 401 no autorizado
+        return route_function(*args, **kwargs)
+    return decorated_route
+
+
 
 @app.route('/login', methods=['POST'])
 def login():
@@ -14,56 +31,68 @@ def login():
     return Process.login(username, password)
 
 @app.route('/getall', methods=['GET'])
+@login_required
 def getall():
     return Process.get_all_processes()
 
 @app.route('/getprocessname/<int:process_id>', methods=['GET'])
+@login_required
 def get_process_name(process_id):
     return Process.get_process_name(process_id)
 
 @app.route('/getprocessid/<string:process_name>', methods=['GET'])
+@login_required
 def get_process_id(process_name):
     return Process.get_process_id(process_name)
 
 @app.route('/getcountprocesses', methods=['GET'])
+@login_required
 def get_count_processes():
     return str(Process.get_count_processes())
 
 @app.route('/initiateprocess/<int:process_id>', methods=['POST'])
+@login_required
 def initiate_process(process_id):
     response = Process.initiate_process(process_id)
     return response.json()
 
 @app.route('/setvariable/<int:task_id>/<string:variable>/<value>/<string:tipo>', methods=['PUT'])
+@login_required
 def set_variable(task_id, variable, value, tipo):
     response = Process.set_variable(task_id, variable, value, tipo)
     return jsonify(response.json())
 
 @app.route('/setvariablebycase/<int:case_id>/<string:variable>/<value>/<string:tipo>', methods=['PUT'])
+@login_required
 def set_variable_by_case(case_id, variable, value, tipo):
     response = Process.set_variable_by_case(case_id, variable, value, tipo)
     return jsonify(response.json())
 
 @app.route('/assigntask/<int:task_id>/<int:user_id>', methods=['PUT'])
+@login_required
 def assign_task(task_id, user_id):
     response = Process.assign_task(task_id, user_id)
     return jsonify(response.json())
 
 @app.route('/searchactivitybycase/<int:case_id>', methods=['GET'])
+@login_required
 def search_activity_by_case(case_id):
     response = Process.search_activity_by_case(case_id)
     return jsonify(response.json())
 
 @app.route('/completeactivity/<int:task_id>', methods=['POST'])
+@login_required
 def complete_activity(task_id):
     response = Process.complete_activity(task_id)
     return jsonify(response.json())
 
 @app.route('/getvariable/<int:task_id>/<string:variable>', methods=['GET'])
+@login_required
 def get_variable(task_id, variable):
     return jsonify(Process.get_variable(task_id, variable))
 
 @app.route('/getvariablebycase/<int:case_id>/<string:variable>', methods=['GET'])
+@login_required
 def get_variable_by_case(case_id, variable):
     return jsonify(Process.get_variable_by_case(case_id, variable))
 
@@ -78,7 +107,6 @@ class Process:
                 "password": password,
                 "redirect": "false"
             }
-
             response = cookieJar.post(login_url, data=payload)
             if response.status_code == 204:
                 # Almacenar el token de Bonita en una variable de sesión
