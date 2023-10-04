@@ -1,15 +1,10 @@
-from flask import Flask, render_template, request, redirect, url_for, Response
+from flask import Flask, render_template, request, redirect, url_for, Response, make_response
 import requests
 from functools import wraps
 
 app = Flask(__name__)
 base_url = "http://localhost:5000"  # Reemplaza con la URL de tu backend
 
-# Variable para almacenar el estado de autenticación (por ejemplo, True si el usuario está autenticado, False si no lo está)
-is_authenticated = False
-
-# Token de sesion (X-Bonita-API-Token)
-token = None
 
 # Función para verificar el estado de autenticación del usuario
 def is_user_authenticated():
@@ -19,7 +14,8 @@ def is_user_authenticated():
 def login_required(route_function):
     @wraps(route_function)  # Usa wraps para mantener el nombre del endpoint original pq sino se rompe
     def decorated_route(*args, **kwargs):
-        if not is_user_authenticated():
+        token = request.cookies.get('X-Bonita-API-Token')
+        if not token:
             return redirect('/login')
         return route_function(*args, **kwargs)
     return decorated_route
@@ -35,7 +31,6 @@ def design_collection():
 
 @app.route('/login', methods=['POST'])
 def submit_login():
-    global is_authenticated,token
     username = request.form.get('username')
     password = request.form.get('password')
 
@@ -47,12 +42,15 @@ def submit_login():
     response = requests.post(f"{base_url}/login", json=data)
     if response.status_code == 200:
         # Establecer el estado de autenticación como True
-        is_authenticated = True
         # Setea el cookie del token que retorna el login para que se almacene tambien en el front!!
         #???? chequear porque al final no se usa
-        token = response.text
-
-        return redirect('/design_collection')
+        token = response.json()
+        print(token["bonita_auth"])
+        resp = make_response(redirect('/design_collection'))
+        # Establecer la cookie X-Bonita-API-Token en la respuesta
+        resp.set_cookie('X-Bonita-API-Token', token["bonita_token"])
+        resp.set_cookie('JSESSIONID', token["bonita_auth"])
+        return resp
 
 @app.route('/submit', methods=['POST'])
 @login_required

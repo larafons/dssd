@@ -111,14 +111,18 @@ class Process:
             if response.status_code == 204:
                 # Almacenar el token de Bonita en una variable de sesión
                 token = cookieJar.cookies.get("X-Bonita-API-Token")
+                sessionId = cookieJar.cookies.get("JSESSIONID")
                 cookieJar.headers.update({
                     'bonita_token': cookieJar.cookies.get("X-Bonita-API-Token"),
                     'bonita_auth': cookieJar.cookies.get("JSESSIONID")
                 })
                 if token:
                     # Almacenar el token en una variable de sesión
-                    session_token = token
-                    return session_token
+                    payload = {
+                        'bonita_token': token,
+                        'bonita_auth': sessionId
+                    }
+                    return payload
                 else:
                     return None  # Token no encontrado
             else:
