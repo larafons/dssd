@@ -38,10 +38,10 @@ def submit():
         "informacion_adicional": request.form.get('informacion_adicional')
     }
     # Harcodeamos el nombre del pool
-    response = request.get(f"{base_url}/get_process_id/entrega-1")
-    print(response)
+    response = requests.get(f"{base_url}/getprocessid/entrega-1")
+    process_id = response.json()
     # Enviar los datos al backend para iniciar el proceso
-    response1 = requests.post(f"{base_url}/initiateprocess", json=data)
+    response1 = requests.post(f"{base_url}/initiateprocess/{process_id}", json=data)
 
     if response1.status_code == 200:
         return "Proceso iniciado exitosamente"
