@@ -5,11 +5,6 @@ from functools import wraps
 app = Flask(__name__)
 base_url = "http://localhost:5000"  # Reemplaza con la URL de tu backend
 
-
-# Función para verificar el estado de autenticación del usuario
-def is_user_authenticated():
-    return is_authenticated
-
 # Decorador personalizado para proteger rutas
 def login_required(route_function):
     @wraps(route_function)  # Usa wraps para mantener el nombre del endpoint original pq sino se rompe
@@ -29,6 +24,12 @@ def login():
 def design_collection():
     return render_template('form.html')
 
+@app.route('/get_variables/<string:case_id>', methods=['GET'])
+@login_required
+def get_variables(case_id):
+    response = requests.get(f"{base_url}/get_all_variables/{case_id}")
+    return response.json()
+
 @app.route('/login', methods=['POST'])
 def submit_login():
     username = request.form.get('username')
@@ -41,9 +42,7 @@ def submit_login():
     # Enviar los datos al backend para el inicio de sesión
     response = requests.post(f"{base_url}/login", json=data)
     if response.status_code == 200:
-        # Establecer el estado de autenticación como True
         # Setea el cookie del token que retorna el login para que se almacene tambien en el front!!
-        #???? chequear porque al final no se usa
         token = response.json()
         print(token["bonita_auth"])
         resp = make_response(redirect('/design_collection'))
@@ -68,9 +67,14 @@ def submit_form():
     process_id = response.json()
     # Enviar los datos al backend para iniciar el proceso
     response1 = requests.post(f"{base_url}/initiateprocess/{process_id}", json=data)
+    case_id = response1.json()['caseId']
 
     if response1.status_code == 200:
-        return "Proceso iniciado exitosamente"
+        for key, value in data.items():
+            if (key == "fecha_lanzamiento"):
+                response_set_variable = requests.put(f"{base_url}/setvariablebycase/{case_id}/{key}/{value}/date")
+            response_set_variable = requests.put(f"{base_url}/setvariablebycase/{case_id}/{key}/{value}/string")
+        return redirect('/get_variables/'+str(case_id))
     else:
         return "Error al iniciar el proceso"
 

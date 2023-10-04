@@ -96,6 +96,11 @@ def get_variable(task_id, variable):
 def get_variable_by_case(case_id, variable):
     return jsonify(Process.get_variable_by_case(case_id, variable))
 
+@app.route('/get_all_variables/<string:case_id>', methods=['GET'])
+@login_required
+def get_all_variables(case_id):
+    return jsonify(Process.get_all_variables_by_case(case_id))
+
 class Process:
     @staticmethod
     def login(username, password):
@@ -196,30 +201,35 @@ class Process:
 
     @staticmethod
     def assign_task(task_id, user_id):
-        response = requests.put(f"{base_url}API/bpm/userTask/{task_id}", json={"userId": user_id})
+        response = cookieJar.put(f"{base_url}API/bpm/userTask/{task_id}", json={"userId": user_id})
         return response
 
     @staticmethod
     def search_activity_by_case(case_id):
-        response = requests.get(f"{base_url}API/bpm/task?f=caseId{case_id}")
+        response = cookieJar.get(f"{base_url}API/bpm/task?f=caseId{case_id}")
         return response
     
     @staticmethod
     def complete_activity(task_id):
-        response = requests.post(f"{base_url}API/bpm/userTask/{task_id}/execution")
+        response = cookieJar.post(f"{base_url}API/bpm/userTask/{task_id}/execution")
         return response
 
     @staticmethod
     def get_variable(task_id, variable):
-        case_bonita = requests.get(f"{base_url}API/bpm/userTask/{task_id}")
+        case_bonita = cookieJar.get(f"{base_url}API/bpm/userTask/{task_id}")
         case_id = case_bonita.json()['data']['caseId']
-        var_bonita = requests.get(f"{base_url}API/bpm/caseVariable/{case_id}/{variable}")
+        var_bonita = cookieJar.get(f"{base_url}API/bpm/caseVariable/{case_id}/{variable}")
         return var_bonita.json()['data']
 
     @staticmethod
     def get_variable_by_case(case_id, variable):
-        var_bonita = requests.get(f"{base_url}API/bpm/caseVariable/{case_id}/{variable}")
-        return var_bonita.json()['data']
+        var_bonita = cookieJar.get(f"{base_url}API/bpm/caseVariable/{case_id}/{variable}")
+        return { var_bonita.json()['name'] : var_bonita.json()['value'] }
+    
+    @staticmethod
+    def get_all_variables_by_case(case_id):
+        var_bonita = cookieJar.get(f"{base_url}API/bpm/caseVariable?f=case_id={case_id}")
+        return var_bonita.json()
 
 if __name__ == "__main__":
     app.run(debug=True)
