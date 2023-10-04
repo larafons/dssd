@@ -148,12 +148,12 @@ class Process:
     def set_variable(task_id, variable, value, tipo):
         task_response = cookieJar.get(f"{base_url}API/bpm/userTask/{task_id}")
         case_id = task_response.json()['data']['caseId']
-        response = cookieJar.put(f"{base_url}API/bp/caseVariable/{case_id}/{variable}", json={variable: value, 'type': tipo})
+        response = cookieJar.put(f"{base_url}API/bpm/caseVariable/{case_id}/{variable}", json={variable: value, 'type': tipo})
         return response
 
     @staticmethod
     def set_variable_by_case(case_id, variable, value, tipo):
-        response = cookieJar.put(f"{base_url}API/bp/caseVariable/{case_id}/{variable}", json={variable: value, 'type': tipo})
+        response = cookieJar.put(f"{base_url}API/bpm/caseVariable/{case_id}/{variable}", json={variable: value, 'type': tipo})
         return response
 
     @staticmethod
