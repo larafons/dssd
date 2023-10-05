@@ -190,7 +190,7 @@ class Process:
 
     @staticmethod
     def set_variable_by_case(case_id, variable, value, tipo):
-        response = cookieJar.put(f"{base_url}API/bpm/caseVariable/{case_id}/{variable}", json={variable: value, 'type': tipo})
+        response = cookieJar.put(f"{base_url}API/bpm/caseVariable/{case_id}/{variable}", json={"type": tipo, "value": value})
         return response
 
     @staticmethod

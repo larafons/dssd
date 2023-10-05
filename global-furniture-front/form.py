@@ -63,7 +63,7 @@ def submit_form():
         "informacion_adicional": request.form.get('informacion_adicional')
     }
     # Harcodeamos el nombre del pool
-    response = requests.get(f"{base_url}/getprocessid/entrega-1")
+    response = requests.get(f"{base_url}/getprocessid/entrega-1.1")
     process_id = response.json()
     # Enviar los datos al backend para iniciar el proceso
     response1 = requests.post(f"{base_url}/initiateprocess/{process_id}", json=data)
@@ -72,8 +72,9 @@ def submit_form():
     if response1.status_code == 200:
         for key, value in data.items():
             if (key == "fecha_lanzamiento"):
-                response_set_variable = requests.put(f"{base_url}/setvariablebycase/{case_id}/{key}/{value}/date")
-            response_set_variable = requests.put(f"{base_url}/setvariablebycase/{case_id}/{key}/{value}/string")
+                response_set_variable = requests.put(f"{base_url}/setvariablebycase/{case_id}/{key}/{value}/java.util.Date")
+            else:
+                response_set_variable = requests.put(f"{base_url}/setvariablebycase/{case_id}/{key}/{value}/java.lang.String")
         return redirect('/get_variables/'+str(case_id))
     else:
         return "Error al iniciar el proceso"
