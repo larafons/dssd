@@ -47,7 +47,6 @@ def submit_login():
     if response.status_code == 200:
         # Setea el cookie del token que retorna el login para que se almacene tambien en el front!!
         token = response.json()
-        print(token["bonita_auth"])
         resp = make_response(redirect('/design_collection'))
         # Establecer la cookie X-Bonita-API-Token en la respuesta
         resp.set_cookie('X-Bonita-API-Token', token["bonita_token"])
@@ -71,19 +70,26 @@ def submit_form():
     process_id = response.json()
     # Enviar los datos al backend para iniciar el proceso
     response1 = requests.post(f"{base_url}/initiateprocess/{process_id}", json=data)
-    case_id = response1.json()['caseId']
-
-    if response1.status_code == 200:
-        for key, value in data.items():
-           # if (key == "fecha_lanzamiento"):
-            #    print(value)
-            #    response_set_variable = requests.put(f"{base_url}/setvariablebycase/{case_id}/{key}/{value}/java.util.Date")
-            #else:
-            response_set_variable = requests.put(f"{base_url}/setvariablebycase/{case_id}/{key}/{value}/java.lang.String")
-        return redirect('/get_variables/'+str(case_id))
+    case_id = str(response1.json()['caseId'])
+    #Buscar la tarea por caseid
+    response2 = requests.get(f"{base_url}/searchactivitybycase/{case_id}")
+    task_id = response2.json()['id']
+    #Buscar usuario generico
+    response3 = requests.get(f"{base_url}/get_user_by_username/walter.bates")
+    user_id = response3.json()[0]['id']
+    #Asignar la tarea al usuario
+    response4 = requests.put(f"{base_url}/assigntask/{str(task_id)}/{str(user_id)}")
+    if response4.status_code == 200:
+        #Completar la tarea
+        response5 = requests.post(f"{base_url}/completeactivity/{task_id}")
+        if response4.status_code == 200:
+            for key, value in data.items():
+                response_set_variable = requests.put(f"{base_url}/setvariablebycase/{case_id}/{key}/{value}/java.lang.String")
+            return redirect('/get_variables/'+str(case_id))
+        else:
+            return "Error al iniciar el proceso"
     else:
         return "Error al iniciar el proceso"
     
-
 if __name__ == '__main__':
     app.run(port=5001, debug=True)

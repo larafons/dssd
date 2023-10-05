@@ -68,23 +68,17 @@ def set_variable_by_case(case_id, variable, value, tipo):
     response = Process.set_variable_by_case(case_id, variable, value, tipo)
     return jsonify(response.json())
 
-@app.route('/assigntask/<int:task_id>/<int:user_id>', methods=['PUT'])
+@app.route('/assigntask/<string:task_id>/<string:user_id>', methods=['PUT'])
 @login_required
 def assign_task(task_id, user_id):
     response = Process.assign_task(task_id, user_id)
-    return jsonify(response.json())
+    return str(response.status_code)
 
-@app.route('/searchactivitybycase/<int:case_id>', methods=['GET'])
+@app.route('/searchactivitybycase/<string:case_id>', methods=['GET'])
 @login_required
 def search_activity_by_case(case_id):
     response = Process.search_activity_by_case(case_id)
-    return jsonify(response.json())
-
-#@app.route('/completeactivity/<int:task_id>', methods=['POST'])
-#@login_required
-#def complete_activity(task_id):
-#    response = Process.complete_activity(task_id)
-#    return jsonify(response.json())
+    return response
 
 @app.route('/getvariable/<int:task_id>/<string:variable>', methods=['GET'])
 @login_required
@@ -101,13 +95,16 @@ def get_variable_by_case(case_id, variable):
 def get_all_variables(case_id):
     return jsonify(Process.get_all_variables_by_case(case_id))
 
-@app.route('/completeactivity/<string:case_id>', methods=['PUT'])
+@app.route('/completeactivity/<string:task_id>', methods=['POST'])
 @login_required
-def complete_activity(case_id):
-    task_id= Process.get_task_by_id(case_id)
-    print('----------------------------------------')
-    print(task_id)
-    return jsonify(Process.complete_activity(task_id))
+def complete_activity(task_id):
+    response = Process.complete_activity(task_id)
+    return str(response.status_code)
+
+@app.route('/get_user_by_username/<string:username>', methods=['GET'])
+@login_required
+def get_user_by_username(username):
+    return jsonify(Process.get_user_by_username(username))
 
 
 class Process:
@@ -207,20 +204,19 @@ class Process:
         response = cookieJar.get(f"{base_url}API/bpm/process?p=05c-1000")
         return len(response.json()['data'])
 
-
     @staticmethod
     def assign_task(task_id, user_id):
-        response = cookieJar.put(f"{base_url}API/bpm/userTask/{task_id}", json={"userId": user_id})
+        response = cookieJar.put(f"{base_url}API/bpm/userTask/{task_id}", json={"assigned_id": user_id})
         return response
 
     @staticmethod
     def search_activity_by_case(case_id):
-        response = cookieJar.get(f"{base_url}API/bpm/task?f=caseId{case_id}")
-        return response
+        response = cookieJar.get(f"{base_url}API/bpm/task?f=caseId={case_id}")
+        return response.json()[0]
     
     @staticmethod
     def complete_activity(task_id):
-        response = cookieJar.put(f"{base_url}API/bpm/task/{task_id}/execution", json={"state": "completed"})
+        response = cookieJar.post(f"{base_url}API/bpm/userTask/{task_id}/execution", json={"state": "completed"})
         return response
 
     @staticmethod
@@ -243,6 +239,11 @@ class Process:
     @staticmethod
     def get_task_by_id(case_id):
         var_bonita = cookieJar.get(f"{base_url}API/bpm/task/{case_id}")
+        return var_bonita.json()
+    
+    @staticmethod
+    def get_user_by_username(username):
+        var_bonita = cookieJar.get(f"{base_url}API/identity/user?f=userName={username}")
         return var_bonita.json()
 
 if __name__ == "__main__":
