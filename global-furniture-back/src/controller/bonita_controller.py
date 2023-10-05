@@ -80,11 +80,11 @@ def search_activity_by_case(case_id):
     response = Process.search_activity_by_case(case_id)
     return jsonify(response.json())
 
-@app.route('/completeactivity/<int:task_id>', methods=['POST'])
-@login_required
-def complete_activity(task_id):
-    response = Process.complete_activity(task_id)
-    return jsonify(response.json())
+#@app.route('/completeactivity/<int:task_id>', methods=['POST'])
+#@login_required
+#def complete_activity(task_id):
+#    response = Process.complete_activity(task_id)
+#    return jsonify(response.json())
 
 @app.route('/getvariable/<int:task_id>/<string:variable>', methods=['GET'])
 @login_required
@@ -100,6 +100,15 @@ def get_variable_by_case(case_id, variable):
 @login_required
 def get_all_variables(case_id):
     return jsonify(Process.get_all_variables_by_case(case_id))
+
+@app.route('/completeactivity/<string:case_id>', methods=['PUT'])
+@login_required
+def complete_activity(case_id):
+    task_id= Process.get_task_by_id(case_id)
+    print('----------------------------------------')
+    print(task_id)
+    return jsonify(Process.complete_activity(task_id))
+
 
 class Process:
     @staticmethod
@@ -211,7 +220,7 @@ class Process:
     
     @staticmethod
     def complete_activity(task_id):
-        response = cookieJar.post(f"{base_url}API/bpm/userTask/{task_id}/execution")
+        response = cookieJar.put(f"{base_url}API/bpm/task/{task_id}/execution", json={"state": "completed"})
         return response
 
     @staticmethod
@@ -229,6 +238,11 @@ class Process:
     @staticmethod
     def get_all_variables_by_case(case_id):
         var_bonita = cookieJar.get(f"{base_url}API/bpm/caseVariable?f=case_id={case_id}")
+        return var_bonita.json()
+    
+    @staticmethod
+    def get_task_by_id(case_id):
+        var_bonita = cookieJar.get(f"{base_url}API/bpm/task/{case_id}")
         return var_bonita.json()
 
 if __name__ == "__main__":

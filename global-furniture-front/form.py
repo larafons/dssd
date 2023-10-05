@@ -1,6 +1,8 @@
 from flask import Flask, render_template, request, redirect, url_for, Response, make_response
 import requests
 from functools import wraps
+import datetime
+import time 
 
 app = Flask(__name__)
 base_url = "http://localhost:5000"  # Reemplaza con la URL de tu backend
@@ -28,6 +30,7 @@ def design_collection():
 @login_required
 def get_variables(case_id):
     response = requests.get(f"{base_url}/get_all_variables/{case_id}")
+    complete_activity = requests.put(f"{base_url}/completeactivity/{case_id}")
     return response.json()
 
 @app.route('/login', methods=['POST'])
@@ -57,13 +60,14 @@ def submit_form():
     # Obtener los datos del formulario
     data = {
         "categoria": request.form.get('categoria'),
+        "caracteristicas": request.form.get('caracteristicas'),
         "modelos": request.form.get('modelos'),
         "plazo_fabricacion": request.form.get('plazo_fabricacion'),
         "fecha_lanzamiento": request.form.get('fecha_lanzamiento'),
         "informacion_adicional": request.form.get('informacion_adicional')
     }
     # Harcodeamos el nombre del pool
-    response = requests.get(f"{base_url}/getprocessid/entrega-1.1")
+    response = requests.get(f"{base_url}/getprocessid/entrega-1")
     process_id = response.json()
     # Enviar los datos al backend para iniciar el proceso
     response1 = requests.post(f"{base_url}/initiateprocess/{process_id}", json=data)
@@ -71,13 +75,15 @@ def submit_form():
 
     if response1.status_code == 200:
         for key, value in data.items():
-            if (key == "fecha_lanzamiento"):
-                response_set_variable = requests.put(f"{base_url}/setvariablebycase/{case_id}/{key}/{value}/java.util.Date")
-            else:
-                response_set_variable = requests.put(f"{base_url}/setvariablebycase/{case_id}/{key}/{value}/java.lang.String")
+           # if (key == "fecha_lanzamiento"):
+            #    print(value)
+            #    response_set_variable = requests.put(f"{base_url}/setvariablebycase/{case_id}/{key}/{value}/java.util.Date")
+            #else:
+            response_set_variable = requests.put(f"{base_url}/setvariablebycase/{case_id}/{key}/{value}/java.lang.String")
         return redirect('/get_variables/'+str(case_id))
     else:
         return "Error al iniciar el proceso"
+    
 
 if __name__ == '__main__':
     app.run(port=5001, debug=True)
