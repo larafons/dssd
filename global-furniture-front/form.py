@@ -21,10 +21,15 @@ def login_required(route_function):
 def login():
     return render_template('login.html')
 
+@app.route('/set_materials', methods=['GET'])
+@login_required
+def set_materials():
+    return render_template('materials.html')
+
 @app.route('/design_collection', methods=['GET'])
 @login_required
 def design_collection():
-    return render_template('form.html')
+    return render_template('design.html')
 
 @app.route('/get_variables/<string:case_id>', methods=['GET'])
 @login_required
@@ -53,9 +58,9 @@ def submit_login():
         resp.set_cookie('JSESSIONID', token["bonita_auth"])
         return resp
 
-@app.route('/submit', methods=['POST'])
+@app.route('/submit_design', methods=['POST'])
 @login_required
-def submit_form(): 
+def submit_design(): 
     # Obtener los datos del formulario
     data = {
         "categoria": request.form.get('categoria'),
@@ -90,6 +95,24 @@ def submit_form():
             return "Error al iniciar el proceso"
     else:
         return "Error al iniciar el proceso"
-    
+
+
+@app.route('/submit_materials', methods=['POST'])
+@login_required
+def submit_materials(): 
+    # Obtener los datos del formulario
+    data = {
+        "materiales": {
+            request.form.get('material_1'): request.form.get('cantidad_1'),
+            request.form.get('material_2'): request.form.get('cantidad_2'),
+            request.form.get('material_3'): request.form.get('cantidad_3'),
+            request.form.get('material_4'): request.form.get('cantidad_4')
+        },
+        "fecha_lanzamiento": request.form.get('fecha_lanzamiento')
+    }
+
+    print(data)
+
+
 if __name__ == '__main__':
     app.run(port=5001, debug=True)
