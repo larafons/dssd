@@ -17,17 +17,46 @@ def login_required(route_function):
         return route_function(*args, **kwargs)
     return decorated_route
 
+# Define una función decoradora que verifica el rol del usuario
+def require_role(role):
+    def decorator(view_func):
+        @wraps(view_func)
+        def wrapped_view(*args, **kwargs):
+            # Obtiene el valor del rol de la cookie 'role'
+            user_role = request.cookies.get('role')
+            if user_role == role:
+                # El usuario tiene el rol requerido, permite el acceso
+                return view_func(*args, **kwargs)
+            else:
+                # El usuario no tiene el rol correspondiente, muestra un mensaje de denegación
+                response = make_response('No tienes permiso para acceder a esta ruta', 403)
+                return response
+        return wrapped_view
+    return decorator
+
+
+def check_role(route_function):
+    @wraps(route_function)  # Usa wraps para mantener el nombre del endpoint original pq sino se rompe
+    def decorated_route(*args, **kwargs):
+        token = request.cookies.get('X-Bonita-API-Token')
+        if not token:
+            return redirect('/login')
+        return route_function(*args, **kwargs)
+    return decorated_route
+
 @app.route('/login', methods=['GET'])
 def login():
     return render_template('login.html')
 
 @app.route('/set_materials', methods=['GET'])
 @login_required
+@require_role('operators')
 def set_materials():
     return render_template('materials.html')
 
 @app.route('/design_collection', methods=['GET'])
 @login_required
+@require_role('designer')
 def design_collection():
     return render_template('design.html')
 
@@ -51,9 +80,20 @@ def submit_login():
     response = requests.post(f"{base_url}/login", json=data)
     if response.status_code == 200:
         # Setea el cookie del token que retorna el login para que se almacene tambien en el front!!
+        response_user = requests.get(f"{base_url}/get_user_by_username/{username}")
+        userdata_json = response_user.json()
+        print(userdata_json[0])
+        user_id = int(userdata_json[0]["id"])
+        print(type(user_id))
+        res_role = requests.get(f"{base_url}/get_memberships/{user_id}")
+        role_json = res_role.json()
+        role_data = requests.get(f"{base_url}/get_role_data/{role_json[0]['role_id']}")
+        print (role_data.json())
+        role_data_json = role_data.json()
         token = response.json()
         resp = make_response(redirect('/design_collection'))
         # Establecer la cookie X-Bonita-API-Token en la respuesta
+        resp.set_cookie('role', role_data_json["name"])
         resp.set_cookie('X-Bonita-API-Token', token["bonita_token"])
         resp.set_cookie('JSESSIONID', token["bonita_auth"])
         return resp

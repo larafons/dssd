@@ -117,6 +117,16 @@ def complete_activity(task_id):
 def get_user_by_username(username):
     return jsonify(Process.get_user_by_username(username))
 
+@app.route('/get_memberships/<int:user_id>', methods=['GET'])
+@login_required
+def get_memerships(user_id):
+    return jsonify(Process.get_memberships(user_id))
+
+@app.route('/get_role_data/<string:role_id>', methods=['GET'])
+@login_required
+def get_role_data(role_id):
+    return jsonify(Process.get_role_data(role_id))
+
 
 class Process:
     @staticmethod
@@ -255,6 +265,16 @@ class Process:
     @staticmethod
     def get_user_by_username(username):
         var_bonita = cookieJar.get(f"{base_url}API/identity/user?f=userName={username}")
+        return var_bonita.json()
+    
+    @staticmethod
+    def get_memberships(user_id):
+        var_bonita = cookieJar.get(f"{base_url}API/identity/membership?f=user_id={user_id}")
+        return var_bonita.json()
+    
+    @staticmethod
+    def get_role_data(role_id):
+        var_bonita = cookieJar.get(f"{base_url}API/identity/role/{role_id}")
         return var_bonita.json()
 
 if __name__ == "__main__":
