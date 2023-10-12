@@ -1,9 +1,18 @@
 from flask import Flask, request, jsonify
 from functools import wraps
 import requests
+from pymongo import MongoClient
 
 app = Flask(__name__)
 base_url= "http://localhost:8080/bonita/"
+
+
+#conexion a la base de datos de mongo
+uri = "mongodb+srv://joaquincavenaghi:3cbNbq2GzlVUSzRV@dbglobalfurniture.zltrtey.mongodb.net/?retryWrites=true&w=majority"
+
+client = MongoClient(uri)
+db = client.dbglobalfurniture #accedemos a la coleccion dbglobalfurniture (es la q vamos a usar)
+# Imprime el nombre de todas las bases de datos en el cluster, para ver si anda
 
 cookieJar = requests.Session()
 
@@ -53,6 +62,8 @@ def get_count_processes():
 @app.route('/initiateprocess/<int:process_id>', methods=['POST'])
 @login_required
 def initiate_process(process_id):
+    data = request.get_json()
+    db.model.insert_one(data)
     response = Process.initiate_process(process_id)
     return response.json()
 
