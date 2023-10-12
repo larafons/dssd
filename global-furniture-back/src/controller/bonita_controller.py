@@ -12,7 +12,6 @@ uri = "mongodb+srv://joaquincavenaghi:3cbNbq2GzlVUSzRV@dbglobalfurniture.zltrtey
 
 client = MongoClient(uri)
 db = client.dbglobalfurniture #accedemos a la coleccion dbglobalfurniture (es la q vamos a usar)
-# Imprime el nombre de todas las bases de datos en el cluster, para ver si anda
 
 cookieJar = requests.Session()
 

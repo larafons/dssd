@@ -35,10 +35,10 @@ datos = {
     ],
 }
 
-@app.route('/buscar/<material>/<fecha>', methods=['GET'])
-def buscar(material, fecha):
+@app.route('/buscar/<material>/<fecha>/<cant>', methods=['GET'])
+def buscar(material, fecha, cant):
     if material in datos:
-        result = [prov for prov in datos[material] if prov["cantidad"] > 0 and prov["fecha"] <= fecha]
+        result = [prov for prov in datos[material] if prov["cantidad"] > 0 and prov["fecha"] <= fecha and prov["cantidad"] >= int(cant)]
         return jsonify(result)
     return jsonify([])
 

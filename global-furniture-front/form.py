@@ -6,6 +6,7 @@ import time
 
 app = Flask(__name__)
 base_url = "http://localhost:5000"  # Reemplaza con la URL de tu backend
+api_url = "http://localhost:5002"  # Reemplaza con la URL de tu API
 
 # Decorador personalizado para proteger rutas
 def login_required(route_function):
@@ -50,7 +51,7 @@ def login():
 
 @app.route('/set_materials', methods=['GET'])
 @login_required
-@require_role('operators')
+@require_role('operator')
 def set_materials():
     return render_template('materials.html')
 
@@ -82,13 +83,10 @@ def submit_login():
         # Setea el cookie del token que retorna el login para que se almacene tambien en el front!!
         response_user = requests.get(f"{base_url}/get_user_by_username/{username}")
         userdata_json = response_user.json()
-        print(userdata_json[0])
         user_id = int(userdata_json[0]["id"])
-        print(type(user_id))
         res_role = requests.get(f"{base_url}/get_memberships/{user_id}")
         role_json = res_role.json()
         role_data = requests.get(f"{base_url}/get_role_data/{role_json[0]['role_id']}")
-        print (role_data.json())
         role_data_json = role_data.json()
         token = response.json()
         resp = make_response(redirect('/design_collection'))
@@ -127,10 +125,8 @@ def submit_design():
     if response4.status_code == 200:
         #Completar la tarea
         response5 = requests.post(f"{base_url}/completeactivity/{task_id}")
-        if response4.status_code == 200:
-            for key, value in data.items():
-                response_set_variable = requests.put(f"{base_url}/setvariablebycase/{case_id}/{key}/{value}/java.lang.String")
-            return redirect('/get_variables/'+str(case_id))
+        if response5.status_code == 200:
+            return "Proceso iniciado con exito"
         else:
             return "Error al iniciar el proceso"
     else:
@@ -150,9 +146,21 @@ def submit_materials():
         },
         "fecha_lanzamiento": request.form.get('fecha_lanzamiento')
     }
+    
+    # Filtrar materiales nulos o vacios
+    data["materiales"] = {key: value for key, value in data["materiales"].items() if key and value}
 
-    print(data)
+    # Diccionario para almacenar proveedores por material
+    proveedores_por_material = {}
 
+    for material, cantidad in data["materiales"].items():
+        response = requests.get(f"{api_url}/buscar/{material}/{data['fecha_lanzamiento']}/{cantidad}")
+        proveedores = response.json()
+        if not proveedores:  # Si no hay proveedores disponibles
+            return render_template('materials.html')
+        proveedores_por_material[material] = proveedores
+
+    return render_template('reserve_materials.html', proveedores=proveedores_por_material)
 
 if __name__ == '__main__':
     app.run(port=5001, debug=True)
