@@ -5,6 +5,7 @@ from pymongo import MongoClient
 
 app = Flask(__name__)
 base_url= "http://localhost:8080/bonita/"
+base_url_api= "http://localhost:5002/"
 
 
 #conexion a la base de datos de mongo
@@ -126,8 +127,12 @@ def get_memerships(user_id):
 def get_role_data(role_id):
     return jsonify(Process.get_role_data(role_id))
 
+app.route('/buscar')
+
 
 class Process:
+    APItoken =''
+
     @staticmethod
     def login(username, password):
         try:
@@ -275,6 +280,41 @@ class Process:
     def get_role_data(role_id):
         var_bonita = cookieJar.get(f"{base_url}API/identity/role/{role_id}")
         return var_bonita.json()
+    
+    @staticmethod
+    def get_material():
+
+        # Credenciales de autenticación
+        username = 'walter.bates'  
+        password = 'bpm'  
+        # Realizar una solicitud de autenticación para obtener un token JWT
+        response = requests.post(f"{base_url_api}login", auth=(username, password))
+
+        if response.status_code == 200:
+            token = response.json().get('token')
+            if token:
+                # Almacenar el token en una variable
+                APItoken = token
+                print("Token JWT obtenido con éxito.")
+
+                # Llamar al método /buscar/<material>/<fecha>/<cant> con el token
+                buscar_url = f"{base_url_api}/buscar/material/2023-11-01/100"  # Reemplaza con los valores deseados
+                headers = {'Authorization': f'Bearer {token}'}
+                response = requests.get(buscar_url, headers=headers)
+
+                if response.status_code == 200:
+                    data = response.json()
+                    # Procesa los datos de la solicitud /buscar
+                    print("Resultado de la búsqueda:")
+                    print(data)
+                else:
+                    print(f"Error al llamar la ruta de búsqueda: {response.status_code}, {response.json()}")
+            else:
+                print("No se pudo obtener un token JWT.")
+        else:
+            print(f"Error en la autenticación: {response.status_code}, {response.json()}")
+            
+
 
 if __name__ == "__main__":
     app.run(debug=True)

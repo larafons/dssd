@@ -1,7 +1,11 @@
 from flask import Flask, jsonify, request
-from datetime import datetime
+import jwt
+import datetime
+import secrets
 
 app = Flask(__name__)
+
+SECRET_KEY = secrets.token_hex(32)
 
 # Harcodeamos los datos iniciales
 datos = {
@@ -35,6 +39,49 @@ datos = {
     ],
 }
 
+users = {
+    'walter.bates': 'bpm',
+    'usuario2': 'contrasena2',
+}
+
+# Ruta de autenticación
+@app.route('/login', methods=['POST'])
+def login():
+    auth = request.authorization
+
+    if not auth or not auth.username or not auth.password:
+        return jsonify({'message': 'Falta nombre de usuario o contraseña'}), 401
+
+    username = auth.username
+    password = auth.password
+
+    if username in users and users[username] == password:
+        # Crear un token JWT con un tiempo de expiración
+        token = jwt.encode({'username': username, 'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=1)}, SECRET_KEY, algorithm='HS256')
+        return jsonify({'token': token.decode('utf-8')})
+
+    return jsonify({'message': 'Nombre de usuario o contraseña incorrectos'}), 401
+
+# Middleware para verificar el token JWT
+def verify_token(func):
+    def wrapper(*args, **kwargs):
+        token = request.headers.get('Authorization')
+        if token:
+            try:
+                # Verificar el token JWT con la clave secreta
+                payload = jwt.decode(token, SECRET_KEY, algorithms=['HS256'])
+                # Si el token es válido, se permite el acceso a la función original
+                return func(*args, **kwargs)
+            except jwt.ExpiredSignatureError:
+                return jsonify({"message": "Token expirado"}), 401
+            except jwt.InvalidTokenError:
+                return jsonify({"message": "Token inválido"}), 401
+        else:
+            return jsonify({"message": "Token no proporcionado"}), 401
+
+    return wrapper
+
+@verify_token
 @app.route('/buscar/<material>/<fecha>/<cant>', methods=['GET'])
 def buscar(material, fecha, cant):
     if material in datos:
@@ -42,6 +89,7 @@ def buscar(material, fecha, cant):
         return jsonify(result)
     return jsonify([])
 
+@verify_token
 @app.route('/reservar', methods=['POST'])
 def reservar():
     data = request.json
@@ -58,6 +106,7 @@ def reservar():
                 return jsonify({"status": "No hay suficiente cantidad para reservar"}), 400
     return jsonify({"status": "Proveedor no encontrado"}), 404
 
+@verify_token
 @app.route('/cancelar', methods=['POST'])
 def cancelar():
     data = request.json
