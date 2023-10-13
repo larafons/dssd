@@ -42,7 +42,7 @@
 <body>
     <div class="container">
         <h1 class="text-center">Completar formulario de diseño</h1>
-        <form method="POST" action="/submit_design">
+        <form method="POST" action="/submit_design" enctype="multipart/form-data">
             <div class="form-group">
                 <label>Categoría:</label>
                 <input type="text" class="form-control" name="categoria" required>
@@ -72,6 +72,12 @@
                 <label>Información adicional:</label>
                 <textarea class="form-control" name="informacion_adicional" rows="4"></textarea>
             </div>
+
+            <div class="form-group">
+                <label>Imagen:</label>
+                <input type="file" class="form-control" name="imagen" accept="image/*" required>
+            </div>
+            
 
             <div class="form-group text-center mt-4">
                 <input type="submit" class="btn btn-primary" value="Enviar">

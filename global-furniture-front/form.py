@@ -3,6 +3,8 @@ import requests
 from functools import wraps
 import datetime
 import time 
+import requests
+import base64
 
 app = Flask(__name__)
 base_url = "http://localhost:5000"  # Reemplaza con la URL de tu backend
@@ -100,13 +102,15 @@ def submit_login():
 @login_required
 def submit_design(): 
     # Obtener los datos del formulario
+    file = request.files['imagen']
     data = {
         "categoria": request.form.get('categoria'),
         "caracteristicas": request.form.get('caracteristicas'),
         "modelos": request.form.get('modelos'),
         "plazo_fabricacion": request.form.get('plazo_fabricacion'),
         "fecha_lanzamiento": request.form.get('fecha_lanzamiento'),
-        "informacion_adicional": request.form.get('informacion_adicional')
+        "informacion_adicional": request.form.get('informacion_adicional'),
+        "file": base64.b64encode(file.read()).decode('utf-8'),
     }
     # Harcodeamos el nombre del pool
     response = requests.get(f"{base_url}/getprocessid/entrega-1")
