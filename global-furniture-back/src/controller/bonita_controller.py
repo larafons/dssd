@@ -127,7 +127,9 @@ def get_memerships(user_id):
 def get_role_data(role_id):
     return jsonify(Process.get_role_data(role_id))
 
-app.route('/buscar')
+app.route('/buscar/<string:material>/<string:fecha>/<int:cantidad>', methods=['GET'])
+def get_material(material, fecha, cantidad):
+    return jsonify(Process.get_material(material, fecha, cantidad))
 
 
 class Process:
@@ -282,7 +284,7 @@ class Process:
         return var_bonita.json()
     
     @staticmethod
-    def get_material():
+    def get_material(material, fecha, cantidad):
 
         # Credenciales de autenticación
         username = 'walter.bates'  
@@ -298,7 +300,7 @@ class Process:
                 print("Token JWT obtenido con éxito.")
 
                 # Llamar al método /buscar/<material>/<fecha>/<cant> con el token
-                buscar_url = f"{base_url_api}/buscar/material/2023-11-01/100"  # Reemplaza con los valores deseados
+                buscar_url = f"{base_url_api}/buscar/{material}/{fecha}/{cantidad}"  # Reemplaza con los valores deseados
                 headers = {'Authorization': f'Bearer {token}'}
                 response = requests.get(buscar_url, headers=headers)
 
@@ -307,12 +309,16 @@ class Process:
                     # Procesa los datos de la solicitud /buscar
                     print("Resultado de la búsqueda:")
                     print(data)
+                    return data
                 else:
                     print(f"Error al llamar la ruta de búsqueda: {response.status_code}, {response.json()}")
+                    return(f"Error al llamar la ruta de búsqueda: {response.status_code}, {response.json()}")
             else:
                 print("No se pudo obtener un token JWT.")
+                return ("No se pudo obtener un token JWT.")
         else:
             print(f"Error en la autenticación: {response.status_code}, {response.json()}")
+            return (f"Error en la autenticación: {response.status_code}, {response.json()}")
             
 
 
