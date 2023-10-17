@@ -127,7 +127,7 @@ def get_memerships(user_id):
 def get_role_data(role_id):
     return jsonify(Process.get_role_data(role_id))
 
-app.route('/buscar/<string:material>/<string:fecha>/<int:cantidad>', methods=['GET'])
+@app.route('/buscar/<string:material>/<string:fecha>/<int:cantidad>', methods=['GET'])
 def get_material(material, fecha, cantidad):
     return jsonify(Process.get_material(material, fecha, cantidad))
 

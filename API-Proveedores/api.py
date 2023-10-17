@@ -58,7 +58,7 @@ def login():
     if username in users and users[username] == password:
         # Crear un token JWT con un tiempo de expiración
         token = jwt.encode({'username': username, 'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=1)}, SECRET_KEY, algorithm='HS256')
-        return jsonify({'token': token.decode('utf-8')})
+        return jsonify({'token': token})
 
     return jsonify({'message': 'Nombre de usuario o contraseña incorrectos'}), 401
 
