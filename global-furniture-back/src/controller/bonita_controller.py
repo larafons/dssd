@@ -287,10 +287,13 @@ class Process:
     def get_material(material, fecha, cantidad):
 
         # Credenciales de autenticación
-        username = 'walter.bates'  
-        password = 'bpm'  
+        credentials = {
+            "username": "walter.bates",
+            "password": "bpm"
+        }
+
         # Realizar una solicitud de autenticación para obtener un token JWT
-        response = requests.post(f"{base_url_api}login", auth=(username, password))
+        response = requests.post(f"{base_url_api}login", json=credentials)
 
         if response.status_code == 200:
             token = response.json().get('token')
