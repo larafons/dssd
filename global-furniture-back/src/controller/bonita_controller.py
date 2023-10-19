@@ -5,7 +5,7 @@ from pymongo import MongoClient
 
 app = Flask(__name__)
 base_url= "http://localhost:8080/bonita/"
-base_url_api= "http://localhost:5002/"
+base_url_api= "https://global-furniture-api.onrender.com" #http://localhost:5002/
 
 
 #conexion a la base de datos de mongo
