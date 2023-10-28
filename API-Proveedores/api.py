@@ -23,32 +23,32 @@ ns = api.namespace('proveedor', description='Operaciones de proveedor')
 # Harcodeamos los datos iniciales
 datos = {
     "algodon": [
-        {"name": "Proveedor1", "cantidad": 100, "fecha": "2023-11-01"},
-        {"name": "Proveedor2", "cantidad": 200, "fecha": "2023-11-02"},
-        {"name": "Proveedor3", "cantidad": 300, "fecha": "2023-11-03"},
-        {"name": "Proveedor4", "cantidad": 400, "fecha": "2023-11-04"},
-        {"name": "Proveedor5", "cantidad": 500, "fecha": "2023-11-05"},
+        {"name": "Proveedor1", "cantidad": 100, "fecha": "2023-12-01"},
+        {"name": "Proveedor2", "cantidad": 200, "fecha": "2023-12-02"},
+        {"name": "Proveedor3", "cantidad": 300, "fecha": "2023-12-03"},
+        {"name": "Proveedor4", "cantidad": 400, "fecha": "2023-12-04"},
+        {"name": "Proveedor5", "cantidad": 500, "fecha": "2023-12-05"},
     ],
     "metal": [
-        {"name": "Proveedor1", "cantidad": 100, "fecha": "2023-11-01"},
-        {"name": "Proveedor2", "cantidad": 200, "fecha": "2023-11-02"},
-        {"name": "Proveedor3", "cantidad": 300, "fecha": "2023-11-03"},
-        {"name": "Proveedor4", "cantidad": 400, "fecha": "2023-11-04"},
-        {"name": "Proveedor5", "cantidad": 500, "fecha": "2023-11-05"},
+        {"name": "Proveedor1", "cantidad": 100, "fecha": "2023-12-01"},
+        {"name": "Proveedor2", "cantidad": 200, "fecha": "2023-12-02"},
+        {"name": "Proveedor3", "cantidad": 300, "fecha": "2023-12-03"},
+        {"name": "Proveedor4", "cantidad": 400, "fecha": "2023-12-04"},
+        {"name": "Proveedor5", "cantidad": 500, "fecha": "2023-12-05"},
     ],
     "madera": [
-        {"name": "Proveedor1", "cantidad": 100, "fecha": "2023-11-01"},
-        {"name": "Proveedor2", "cantidad": 200, "fecha": "2023-11-02"},
-        {"name": "Proveedor3", "cantidad": 300, "fecha": "2023-11-03"},
-        {"name": "Proveedor4", "cantidad": 400, "fecha": "2023-11-04"},
-        {"name": "Proveedor5", "cantidad": 500, "fecha": "2023-11-05"},
+        {"name": "Proveedor1", "cantidad": 100, "fecha": "2023-12-01"},
+        {"name": "Proveedor2", "cantidad": 200, "fecha": "2023-12-02"},
+        {"name": "Proveedor3", "cantidad": 300, "fecha": "2023-12-03"},
+        {"name": "Proveedor4", "cantidad": 400, "fecha": "2023-12-04"},
+        {"name": "Proveedor5", "cantidad": 500, "fecha": "2023-12-05"},
     ],
     "poliester": [
-        {"name": "Proveedor1", "cantidad": 100, "fecha": "2023-11-01"},
-        {"name": "Proveedor2", "cantidad": 200, "fecha": "2023-11-02"},
-        {"name": "Proveedor3", "cantidad": 300, "fecha": "2023-11-03"},
-        {"name": "Proveedor4", "cantidad": 400, "fecha": "2023-11-04"},
-        {"name": "Proveedor5", "cantidad": 500, "fecha": "2023-11-05"},
+        {"name": "Proveedor1", "cantidad": 100, "fecha": "2023-12-01"},
+        {"name": "Proveedor2", "cantidad": 200, "fecha": "2023-12-02"},
+        {"name": "Proveedor3", "cantidad": 300, "fecha": "2023-12-03"},
+        {"name": "Proveedor4", "cantidad": 400, "fecha": "2023-12-04"},
+        {"name": "Proveedor5", "cantidad": 500, "fecha": "2023-12-05"},
     ],
 }
 
@@ -72,6 +72,20 @@ reserva_model = api.model('Reserva', {
     'material': fields.String(required=True, description='Tipo de material (algodon, metal, madera o poliester)'),
     'name': fields.String(required=True, description='Nombre del proveedor'),
     'cantidad': fields.Integer(required=True, description='Cantidad a reservar'),
+})
+
+model_material_busqueda = api.model('MaterialBusqueda', {
+    'materiales': fields.Nested(api.model('Materiales', {
+        'material_1': fields.String(description='Tipo de material 1'),
+        'cantidad_1': fields.Integer(description='Cantidad de material 1'),
+        'material_2': fields.String(description='Tipo de material 2'),
+        'cantidad_2': fields.Integer(description='Cantidad de material 2'),
+        'material_3': fields.String(description='Tipo de material 3'),
+        'cantidad_3': fields.Integer(description='Cantidad de material 3'),
+        'material_4': fields.String(description='Tipo de material 4'),
+        'cantidad_4': fields.Integer(description='Cantidad de material 4'),
+    })),
+    'fecha_lanzamiento': fields.String(description='Fecha de lanzamiento en formato Año-Mes-Día')
 })
 
 cancelar_model = api.model('Cancelar', {
@@ -133,26 +147,41 @@ def parse_and_format_date(date_string):
         return None
 
 #Recurso para buscar proveedores
-@ns.route('/buscar/<material>/<fecha>/<cant>')
+@ns.route('/buscar')
 class BuscarResource(Resource):
-    @ns.doc(params={'material': 'Tipo de material (algodon, metal, madera o poliester)', 'fecha': 'Fecha (Año-mes-dia)', 'cant': 'Cantidad requerida'},security='Bearer Auth')
+    @ns.doc(security='Bearer Auth')
+    @ns.expect(model_material_busqueda)
     @verify_token
     @ns.response(200, 'Búsqueda exitosa')
     @ns.response(400, 'Formato de fecha inválido')
     @ns.response(401, 'Token inválido, expirado o no proporcionado')
-    def get(self, material, fecha, cant):
-        formatted_date = parse_and_format_date(fecha)
-        print(formatted_date)
+    def post(self):
+        data = request.get_json()
+        fecha_lanzamiento = data.get("fecha_lanzamiento")
+        materiales = data.get("materiales")
+
+        formatted_date = parse_and_format_date(fecha_lanzamiento)
         if not formatted_date:
             return {"message": "Formato de fecha inválido. Por favor, use el formato 'año-mes-día'."}, 400
-        if material in datos:
-            result = [prov for prov in datos[material] if prov["cantidad"] > 0 and prov["fecha"] <= formatted_date and prov["cantidad"] >= int(cant)]
-            if result:
-                return {"message": "Búsqueda exitosa", "result": result}, 200
-            else:
-                return {"message": "No se encontraron proveedores que cumplan con los criterios"}, 404
+        
+        # Extraer materiales y cantidades
+        mats = [v.strip() for k, v in materiales.items() if "material_" in k]
+        cants = [v for k, v in materiales.items() if "cantidad_" in k]
+        material_cant_list = [(mat, cant) for mat, cant in zip(mats, cants) if mat]
+
+
+        results = {}
+        for material, cant in material_cant_list:
+            if material not in datos:
+                return {"message": f"Material '{material}' no encontrado"}, 404
+
+            results[material] = [prov for prov in datos[material] if prov["cantidad"] > 0 and prov["fecha"] <= formatted_date and prov["cantidad"] >= int(cant)]
+
+        if all(results.values()):
+            return {"message": "Búsqueda exitosa", "result": results}, 200
         else:
-            return {"message": "Material no encontrado"}, 404
+            return {"message": "No se encontraron proveedores que cumplan con los criterios"}, 404
+
 
 
 # Recurso para reservar proveedores

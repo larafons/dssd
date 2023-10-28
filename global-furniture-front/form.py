@@ -5,10 +5,10 @@ import datetime
 import time 
 import requests
 import base64
+import json
 
 app = Flask(__name__)
 base_url = "http://localhost:5000"  # Reemplaza con la URL de tu backend
-api_url = "http://localhost:5002"  # Reemplaza con la URL de tu API
 
 # Decorador personalizado para proteger rutas
 def login_required(route_function):
@@ -67,7 +67,6 @@ def design_collection():
 @login_required
 def get_variables(case_id):
     response = requests.get(f"{base_url}/get_all_variables/{case_id}")
-    complete_activity = requests.put(f"{base_url}/completeactivity/{case_id}")
     return response.json()
 
 @app.route('/login', methods=['POST'])
@@ -151,20 +150,62 @@ def submit_materials():
         "fecha_lanzamiento": request.form.get('fecha_lanzamiento')
     }
     
-    # Filtrar materiales nulos o vacios
-    data["materiales"] = {key: value for key, value in data["materiales"].items() if key and value}
+    #Seteo de variables de proceso los materiales y cantidades como si fuera un dump de json
+    materials_json = json.dumps(data["materiales"])
 
-    # Diccionario para almacenar proveedores por material
-    proveedores_por_material = {}
+    #Obtenemos el case id
+    response = requests.get(f"{base_url}/get_case_id")
+    print("si")
+    case_id = response.json()
+    print(case_id)
 
-    for material, cantidad in data["materiales"].items():
-        response = requests.get(f"{api_url}/buscar/{material}/{data['fecha_lanzamiento']}/{cantidad}")
-        proveedores = response.json()
-        if not proveedores:  # Si no hay proveedores disponibles
-            return render_template('materials.html')
-        proveedores_por_material[material] = proveedores
+    # Setear las variables del proceso
+    response0 = requests.put(f"{base_url}/setvariablebycase/{case_id}/fecha_lanzamiento/{data['fecha_lanzamiento']}/java.lang.String")
+    response = requests.put(f"{base_url}/setvariablebycase/{case_id}/materials_cants/{materials_json}/java.lang.String")
 
-    return render_template('reserve_materials.html', proveedores=proveedores_por_material)
+    # Verificar si las variables se setearon correctamente
+    if response.status_code != 200 or response0.status_code != 200:
+        return "Error al establecer las variables del proceso"
+
+    # Buscar la tarea actual por case_id
+    response1 = requests.get(f"{base_url}/searchactivitybycase/{case_id}")
+    print(response1.json())
+    """"
+    task_id = response1.json()['id']
+    
+    response2 = requests.get(f"{base_url}/get_user_by_username/antonio.operator")
+    user_id = response2.json()[0]['id']
+
+    # Asignar la tarea al usuario
+    response3 = requests.put(f"{base_url}/assigntask/{str(task_id)}/{str(user_id)}")
+    
+    if response3.status_code == 200:
+        # Completar la tarea para avanzar el flujo
+        response4 = requests.post(f"{base_url}/completeactivity/{task_id}")
+        if response4.status_code == 200:
+            time.sleep(5)  # Espera de 5 segundos
+            # Consulta al endpoint de Bonita para obtener las tareas pendientes para el caso
+            response_tasks = requests.get(f"{base_url}/get_pending_tasks/{case_id}")
+            
+            if response_tasks.status_code == 200:
+                tasks_data = response_tasks.json()
+
+                # Busca en las tareas a ver si la tarea de reserva de materiales está pendiente o la de establecer para 
+                # ver cual mostrar en el front
+                if any(task for task in tasks_data if task["name"] == "Reservar materiales" and task["state"] == "ready"):
+                    return render_template('reserve_materials.html')
+                elif any(task for task in tasks_data if task["name"] == "Establecer materiales y cantidades" and task["state"] == "ready"):
+                    return render_template('materials.html')
+                else:
+                    return "Estado desconocido. Por favor, revisa las tareas pendientes en Bonita."
+            else:
+                return "Error al consultar las tareas pendientes en Bonita."
+        else:
+            return "Error al avanzar el proceso"
+    else:
+        return "Error al asignar la tarea"
+    """
+    return "check"
 
 if __name__ == '__main__':
     app.run(port=5001, debug=True)

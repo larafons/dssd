@@ -67,6 +67,12 @@ def initiate_process(process_id):
     response = Process.initiate_process(process_id)
     return response.json()
 
+@app.route('/get_pending_tasks/<int:case_id>', methods=['GET'])
+@login_required
+def get_pending_tasks(case_id):
+    response = Process.get_pending_tasks(case_id)
+    return jsonify(response.json())
+
 @app.route('/setvariable/<int:task_id>/<string:variable>/<value>/<string:tipo>', methods=['PUT'])
 @login_required
 def set_variable(task_id, variable, value, tipo):
@@ -77,7 +83,7 @@ def set_variable(task_id, variable, value, tipo):
 @login_required
 def set_variable_by_case(case_id, variable, value, tipo):
     response = Process.set_variable_by_case(case_id, variable, value, tipo)
-    return jsonify(response.json())
+    return response
 
 @app.route('/assigntask/<string:task_id>/<string:user_id>', methods=['PUT'])
 @login_required
@@ -130,6 +136,10 @@ def get_role_data(role_id):
 @app.route('/buscar/<string:material>/<string:fecha>/<int:cantidad>', methods=['GET'])
 def get_material(material, fecha, cantidad):
     return jsonify(Process.get_material(material, fecha, cantidad))
+
+@app.route('/get_case_id', methods=['GET'])
+def get_case_id():
+    return Process.get_case_id()
 
 
 class Process:
@@ -213,6 +223,11 @@ class Process:
         except requests.exceptions.RequestException as e:
             print(f"Error al hacer la solicitud: {str(e)}")
             return None
+        
+    @staticmethod
+    def get_pending_tasks(case_id):
+        response = cookieJar.get(f"{base_url}/API/bpm/userTask?caseId={case_id}")
+        return response
 
     @staticmethod
     def set_variable(task_id, variable, value, tipo):
@@ -223,6 +238,8 @@ class Process:
 
     @staticmethod
     def set_variable_by_case(case_id, variable, value, tipo):
+        print(value)
+        print(tipo)
         response = cookieJar.put(f"{base_url}API/bpm/caseVariable/{case_id}/{variable}", json={"type": tipo, "value": value})
         return response
 
@@ -284,6 +301,12 @@ class Process:
         return var_bonita.json()
     
     @staticmethod
+    def get_case_id():
+        request = cookieJar.get(f"{base_url}API/bpm/case?f=name=entrega-1")
+        process = request.json()[0]
+        return process["rootCaseId"]
+    
+    @staticmethod
     def get_material(material, fecha, cantidad):
 
         # Credenciales de autenticación
@@ -322,8 +345,6 @@ class Process:
         else:
             print(f"Error en la autenticación: {response.status_code}, {response.json()}")
             return (f"Error en la autenticación: {response.status_code}, {response.json()}")
-            
-
 
 if __name__ == "__main__":
     app.run(debug=True)
