@@ -118,8 +118,8 @@ def submit_design():
     response1 = requests.post(f"{base_url}/initiateprocess/{process_id}", json=data)
     case_id = str(response1.json()['caseId'])
     #Buscar la tarea por caseid
-    response2 = requests.get(f"{base_url}/searchactivitybycase/{case_id}")
-    task_id = response2.json()['id']
+    response2 = requests.get(f"{base_url}/searchactivitybycase/{case_id}/Completar-formulario-diseño")
+    task_id = response2.json()[0]['id']
     #Buscar usuario generico
     response3 = requests.get(f"{base_url}/get_user_by_username/walter.bates")
     user_id = response3.json()[0]['id']
@@ -142,46 +142,44 @@ def submit_materials():
     # Obtener los datos del formulario
     data = {
         "materiales": {
-            request.form.get('material_1'): request.form.get('cantidad_1'),
-            request.form.get('material_2'): request.form.get('cantidad_2'),
-            request.form.get('material_3'): request.form.get('cantidad_3'),
-            request.form.get('material_4'): request.form.get('cantidad_4')
+            request.form.get('material_1',' '): request.form.get('cantidad_1','0'),
+            request.form.get('material_2',' '): request.form.get('cantidad_2','0'),
+            request.form.get('material_3',' '): request.form.get('cantidad_3','0'),
+            request.form.get('material_4',' '): request.form.get('cantidad_4','0')
         },
         "fecha_lanzamiento": request.form.get('fecha_lanzamiento')
     }
-    
+    print(data)
     #Seteo de variables de proceso los materiales y cantidades como si fuera un dump de json
     materials_json = json.dumps(data["materiales"])
-
+    print(materials_json)
     #Obtenemos el case id
     response = requests.get(f"{base_url}/get_case_id")
-    print("si")
     case_id = response.json()
-    print(case_id)
 
     # Setear las variables del proceso
-    response0 = requests.put(f"{base_url}/setvariablebycase/{case_id}/fecha_lanzamiento/{data['fecha_lanzamiento']}/java.lang.String")
-    response = requests.put(f"{base_url}/setvariablebycase/{case_id}/materials_cants/{materials_json}/java.lang.String")
+    response0 = requests.put(f"{base_url}/setvariablebycase/{int(case_id)}/fecha_lanzamiento/{data['fecha_lanzamiento']}/java.lang.String")
+    response = requests.put(f"{base_url}/setvariablebycase/{int(case_id)}/materials_cants/{materials_json}/java.lang.String")
 
     # Verificar si las variables se setearon correctamente
     if response.status_code != 200 or response0.status_code != 200:
         return "Error al establecer las variables del proceso"
 
     # Buscar la tarea actual por case_id
-    response1 = requests.get(f"{base_url}/searchactivitybycase/{case_id}")
-    print(response1.json())
-    """"
-    task_id = response1.json()['id']
+    response1 = requests.get(f"{base_url}/searchactivitybycase/{case_id}/Establecer-materiales-y-cantidades")
+    
+    task_id = response1.json()[0]['id']
     
     response2 = requests.get(f"{base_url}/get_user_by_username/antonio.operator")
     user_id = response2.json()[0]['id']
-
+    
     # Asignar la tarea al usuario
     response3 = requests.put(f"{base_url}/assigntask/{str(task_id)}/{str(user_id)}")
     
     if response3.status_code == 200:
         # Completar la tarea para avanzar el flujo
         response4 = requests.post(f"{base_url}/completeactivity/{task_id}")
+        """"
         if response4.status_code == 200:
             time.sleep(5)  # Espera de 5 segundos
             # Consulta al endpoint de Bonita para obtener las tareas pendientes para el caso
@@ -202,9 +200,9 @@ def submit_materials():
                 return "Error al consultar las tareas pendientes en Bonita."
         else:
             return "Error al avanzar el proceso"
+        """
     else:
         return "Error al asignar la tarea"
-    """
     return "check"
 
 if __name__ == '__main__':

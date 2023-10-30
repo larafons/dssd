@@ -83,7 +83,7 @@ def set_variable(task_id, variable, value, tipo):
 @login_required
 def set_variable_by_case(case_id, variable, value, tipo):
     response = Process.set_variable_by_case(case_id, variable, value, tipo)
-    return response
+    return str(response.status_code)
 
 @app.route('/assigntask/<string:task_id>/<string:user_id>', methods=['PUT'])
 @login_required
@@ -91,10 +91,11 @@ def assign_task(task_id, user_id):
     response = Process.assign_task(task_id, user_id)
     return str(response.status_code)
 
-@app.route('/searchactivitybycase/<string:case_id>', methods=['GET'])
+@app.route('/searchactivitybycase/<string:case_id>/<string:name>', methods=['GET'])
 @login_required
-def search_activity_by_case(case_id):
-    response = Process.search_activity_by_case(case_id)
+def search_activity_by_case(case_id,name):
+    name = name.replace('-',' ')
+    response = Process.search_activity_by_case(case_id,name)
     return response
 
 @app.route('/getvariable/<int:task_id>/<string:variable>', methods=['GET'])
@@ -238,8 +239,6 @@ class Process:
 
     @staticmethod
     def set_variable_by_case(case_id, variable, value, tipo):
-        print(value)
-        print(tipo)
         response = cookieJar.put(f"{base_url}API/bpm/caseVariable/{case_id}/{variable}", json={"type": tipo, "value": value})
         return response
 
@@ -254,9 +253,9 @@ class Process:
         return response
 
     @staticmethod
-    def search_activity_by_case(case_id):
-        response = cookieJar.get(f"{base_url}API/bpm/task?f=caseId={case_id}")
-        return response.json()[0]
+    def search_activity_by_case(case_id,name):
+        response = cookieJar.get(f"{base_url}API/bpm/task?f=caseId={case_id}&f=name={name}")
+        return response.json()
     
     @staticmethod
     def complete_activity(task_id):
