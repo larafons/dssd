@@ -139,20 +139,26 @@ def submit_design():
 @app.route('/submit_materials', methods=['POST'])
 @login_required
 def submit_materials(): 
-    # Obtener los datos del formulario
+    materiales_dict = {}
+
+    # Iterar sobre los campos del formulario
+    for i in range(1, 5):
+        material = request.form.get(f'material_{i}') or ' '
+        cantidad = request.form.get(f'cantidad_{i}') or '0'
+        print("Entro en el for " + str(i) + ": " + material + " " + cantidad)
+        # Añade el material y la cantidad al diccionario
+        materiales_dict[f'material_{i}'] = material
+        materiales_dict[f'cantidad_{i}'] = int(cantidad)  # Convertir a int
+
+    # Estructurar el dato final
     data = {
-        "materiales": {
-            request.form.get('material_1',' '): request.form.get('cantidad_1','0'),
-            request.form.get('material_2',' '): request.form.get('cantidad_2','0'),
-            request.form.get('material_3',' '): request.form.get('cantidad_3','0'),
-            request.form.get('material_4',' '): request.form.get('cantidad_4','0')
-        },
+        "materiales": materiales_dict,
         "fecha_lanzamiento": request.form.get('fecha_lanzamiento')
     }
-    print(data)
+
     #Seteo de variables de proceso los materiales y cantidades como si fuera un dump de json
     materials_json = json.dumps(data["materiales"])
-    print(materials_json)
+
     #Obtenemos el case id
     response = requests.get(f"{base_url}/get_case_id")
     case_id = response.json()
