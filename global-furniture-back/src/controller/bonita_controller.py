@@ -71,7 +71,7 @@ def initiate_process(process_id):
 @login_required
 def get_pending_tasks(case_id):
     response = Process.get_pending_tasks(case_id)
-    return jsonify(response.json())
+    return jsonify(response)
 
 @app.route('/setvariable/<int:task_id>/<string:variable>/<value>/<string:tipo>', methods=['PUT'])
 @login_required
@@ -227,8 +227,8 @@ class Process:
         
     @staticmethod
     def get_pending_tasks(case_id):
-        response = cookieJar.get(f"{base_url}/API/bpm/userTask?caseId={case_id}")
-        return response
+        response = cookieJar.get(f"{base_url}API/bpm/userTask?f=rootCaseId={case_id}")
+        return response.json()
 
     @staticmethod
     def set_variable(task_id, variable, value, tipo):

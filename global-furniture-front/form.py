@@ -145,7 +145,6 @@ def submit_materials():
     for i in range(1, 5):
         material = request.form.get(f'material_{i}') or ' '
         cantidad = request.form.get(f'cantidad_{i}') or '0'
-        print("Entro en el for " + str(i) + ": " + material + " " + cantidad)
         # Añade el material y la cantidad al diccionario
         materiales_dict[f'material_{i}'] = material
         materiales_dict[f'cantidad_{i}'] = int(cantidad)  # Convertir a int
@@ -185,14 +184,15 @@ def submit_materials():
     if response3.status_code == 200:
         # Completar la tarea para avanzar el flujo
         response4 = requests.post(f"{base_url}/completeactivity/{task_id}")
-        """"
+
         if response4.status_code == 200:
-            time.sleep(5)  # Espera de 5 segundos
+            time.sleep(3) 
             # Consulta al endpoint de Bonita para obtener las tareas pendientes para el caso
-            response_tasks = requests.get(f"{base_url}/get_pending_tasks/{case_id}")
+            response_tasks = requests.get(f"{base_url}/get_pending_tasks/{int(case_id)}")
             
             if response_tasks.status_code == 200:
                 tasks_data = response_tasks.json()
+                print(tasks_data)
 
                 # Busca en las tareas a ver si la tarea de reserva de materiales está pendiente o la de establecer para 
                 # ver cual mostrar en el front
@@ -206,10 +206,8 @@ def submit_materials():
                 return "Error al consultar las tareas pendientes en Bonita."
         else:
             return "Error al avanzar el proceso"
-        """
     else:
         return "Error al asignar la tarea"
-    return "check"
 
 if __name__ == '__main__':
     app.run(port=5001, debug=True)
