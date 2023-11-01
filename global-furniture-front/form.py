@@ -186,18 +186,20 @@ def submit_materials():
         response4 = requests.post(f"{base_url}/completeactivity/{task_id}")
 
         if response4.status_code == 200:
-            time.sleep(3) 
+            time.sleep(4) 
             # Consulta al endpoint de Bonita para obtener las tareas pendientes para el caso
             response_tasks = requests.get(f"{base_url}/get_pending_tasks/{int(case_id)}")
-            
             if response_tasks.status_code == 200:
                 tasks_data = response_tasks.json()
-                print(tasks_data)
-
                 # Busca en las tareas a ver si la tarea de reserva de materiales está pendiente o la de establecer para 
                 # ver cual mostrar en el front
                 if any(task for task in tasks_data if task["name"] == "Reservar materiales" and task["state"] == "ready"):
-                    return render_template('reserve_materials.html')
+                    #Obtengo la respuesta de la api que se almaceno como var de proceso en bonita
+                    response_proveedores = requests.get(f"{base_url}/getvariablebycase/{int(case_id)}/proveedores")
+                    proveedores = response_proveedores.json()
+                    #Casteo de string a json diccionario en python
+                    proveedores_data = json.loads(proveedores['proveedores'])
+                    return render_template('reserve_materials.html',proveedores=proveedores_data)
                 elif any(task for task in tasks_data if task["name"] == "Establecer materiales y cantidades" and task["state"] == "ready"):
                     return render_template('materials.html')
                 else:
