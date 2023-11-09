@@ -58,7 +58,8 @@ reservas = {
     "madera": [],
     "poliester": [],
 }
-
+espacios_fabricacion = {
+}
 users = {
     'walter.bates': 'bpm'
 }

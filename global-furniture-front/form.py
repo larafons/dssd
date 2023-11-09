@@ -211,5 +211,35 @@ def submit_materials():
     else:
         return "Error al asignar la tarea"
 
+@app.route('/confirmar_proveedores', methods=['POST'])
+@login_required
+def confirmar_proveedores():
+    # Recopilar datos del formulario
+    datos_confirmados = {}
+    for material, proveedores in request.form.items():
+        datos_confirmados[material] = proveedores
+
+    # Puedes imprimir o procesar los datos como desees
+    print("Datos confirmados:", datos_confirmados)
+    #Obtenemos el case id
+    response = requests.get(f"{base_url}/get_case_id")
+    case_id = response.json()
+    response_materials = requests.get(f"{base_url}/getvariablebycase/{int(case_id)}/materials_cants")
+    materials = response_materials.json()
+    #Casteo de string a json diccionario en python
+    materials_data = json.loads(materials['materials_cants'])
+    for material, prov in datos_confirmados.items():
+        for key, value in materials_data.items():
+            if material == value:
+                consulta = {
+                    "material": material,
+                    "name": prov,
+                    "cantidad": materials_data[f"cantidad_{key[-1]}"]
+                }
+                consulta_json = json.dumps(consulta)
+                response = requests.put(f"{base_url}/setvariablebycase/{int(case_id)}/reserva_material_{key[-1]}/{consulta_json}/java.lang.String")
+                #falta return
+
+
 if __name__ == '__main__':
     app.run(port=5001, debug=True)
