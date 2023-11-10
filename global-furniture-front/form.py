@@ -8,7 +8,7 @@ import base64
 import json
 
 app = Flask(__name__)
-base_url = "http://localhost:5000"  # Reemplaza con la URL de tu backend
+base_url = "http://localhost:5000" 
 
 # Decorador personalizado para proteger rutas
 def login_required(route_function):
@@ -111,6 +111,7 @@ def submit_design():
         "informacion_adicional": request.form.get('informacion_adicional'),
         "file": base64.b64encode(file.read()).decode('utf-8'),
     }
+    plazo_fabricacion= request.form.get('plazo_fabricacion')
     # Harcodeamos el nombre del pool
     response = requests.get(f"{base_url}/getprocessid/entrega-1")
     process_id = response.json()
@@ -123,6 +124,8 @@ def submit_design():
     #Buscar usuario generico
     response3 = requests.get(f"{base_url}/get_user_by_username/walter.bates")
     user_id = response3.json()[0]['id']
+    #Guardo el plazo de fabricacion en la variable de proceso
+    response33 = requests.put(f"{base_url}/setvariablebycase/{int(case_id)}/plazo_fabricacion/{plazo_fabricacion}/java.lang.String")
     #Asignar la tarea al usuario
     response4 = requests.put(f"{base_url}/assigntask/{str(task_id)}/{str(user_id)}")
     if response4.status_code == 200:
@@ -174,7 +177,6 @@ def submit_materials():
     response1 = requests.get(f"{base_url}/searchactivitybycase/{case_id}/Establecer-materiales-y-cantidades")
     
     task_id = response1.json()[0]['id']
-    
     response2 = requests.get(f"{base_url}/get_user_by_username/antonio.operator")
     user_id = response2.json()[0]['id']
     
@@ -186,7 +188,7 @@ def submit_materials():
         response4 = requests.post(f"{base_url}/completeactivity/{task_id}")
 
         if response4.status_code == 200:
-            time.sleep(4) 
+            time.sleep(7) 
             # Consulta al endpoint de Bonita para obtener las tareas pendientes para el caso
             response_tasks = requests.get(f"{base_url}/get_pending_tasks/{int(case_id)}")
             if response_tasks.status_code == 200:
@@ -238,7 +240,38 @@ def confirmar_proveedores():
                 }
                 consulta_json = json.dumps(consulta)
                 response = requests.put(f"{base_url}/setvariablebycase/{int(case_id)}/reserva_material_{key[-1]}/{consulta_json}/java.lang.String")
-                #falta return
+    if response.status_code != 200:
+        return "Error al establecer las variables del proceso"
+    # Buscar la tarea actual por case_id
+    response1 = requests.get(f"{base_url}/searchactivitybycase/{case_id}/Reservar-materiales")
+    print (response1)
+    task_id = response1.json()[0]['id']
+    print(task_id)
+    if response1.status_code == 200:
+        # Completar la tarea para avanzar el flujo
+        response2 = requests.post(f"{base_url}/completeactivity/{task_id}")
+        print(response2)
+        if response2.status_code == 200:
+            time.sleep(7)
+            print('dsp de sleep')
+            # Consulta al endpoint de Bonita para obtener las tareas pendientes para el caso
+            response_tasks = requests.get(f"{base_url}/get_pending_tasks/{int(case_id)}")
+            print(response_tasks)
+            if response_tasks.status_code == 200:
+                tasks_data = response_tasks.json()
+                # Busca en las tareas a ver si la tarea de reserva de materiales está pendiente o la de establecer para 
+                # ver cual mostrar en el front
+                if any(task for task in tasks_data if task["name"] == "Reservar espacios de fabricacion para la coleccion" and task["state"] == "ready"):
+                    print('entra')
+                    #Obtengo la respuesta de la api que se almaceno como var de proceso en bonita
+                    response_espacios = requests.get(f"{base_url}/getvariablebycase/{int(case_id)}/espacios")
+                    print(response_espacios)
+                    espacios = response_espacios.json()
+                    print(espacios)
+                    #Casteo de string a json diccionario en python
+                    espacios_data = json.loads(espacios['espacios'])
+                    print(espacios_data)
+                    return render_template('reserva_espacios.html',espacios=espacios_data)
 
 
 if __name__ == '__main__':

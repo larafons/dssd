@@ -3,7 +3,10 @@ import jwt
 import datetime
 import secrets
 from functools import wraps
+import requests
 from flask_restx import Api, Resource, fields
+
+base_url = "http://localhost:5000" 
 
 authorizations = {
     'Bearer Auth': {
@@ -52,14 +55,22 @@ datos = {
     ],
 }
 
+# la reserva de espacios tiene 2 elementos, fecha de inicio y fecha de fin
 reservas = {
     "algodon": [],
     "metal": [],
     "madera": [],
     "poliester": [],
 }
-espacios_fabricacion = {
+
+reservas_espacios = {
+    "espacio_1": [{"fecha_inicio": "2023-11-10", "fecha_fin": "2023-12-20"}, ],
+    "espacio_2": [{"fecha_inicio": "2024-02-11", "fecha_fin": "2024-03-28"}, {"fecha_inicio": "2024-05-11", "fecha_fin": "2023-06-28"}],
+    "espacio_3": [],
+    "espacio_4": [],
+    "espacio_5": [],
 }
+
 users = {
     'walter.bates': 'bpm'
 }
@@ -73,6 +84,11 @@ reserva_model = api.model('Reserva', {
     'material': fields.String(required=True, description='Tipo de material (algodon, metal, madera o poliester)'),
     'name': fields.String(required=True, description='Nombre del proveedor'),
     'cantidad': fields.Integer(required=True, description='Cantidad a reservar'),
+})
+
+reserva_espacio_model = api.model('Reserva espacio', {
+    'fecha_inicio': fields.String(required=True, description='Fecha de inicio de la reserva del espacio'),
+    'fecha_fin': fields.String(required=True, description='Fecha de fin de la reserva del espacio')
 })
 
 model_material_busqueda = api.model('MaterialBusqueda', {
@@ -240,6 +256,52 @@ class CancelarResource(Resource):
                 reservas[material].remove(reserva)
                 return {"status": "Reserva cancelada con éxito"}
         return {"status": "No se pudo cancelar: reserva inexistente."}, 404
+
+# PROBAR    
+@ns.route('/consultar_espacios')
+class ConsultarEspaciosResource(Resource):
+    @verify_token
+    def post(self):
+        case_id = requests.get(f"{base_url}/get_case_id")
+        # Obtener la fecha de inicio y el plazo de fabricación
+        fecha_inicio_response = requests.get(f"{base_url}/getvariablebycase/{int(case_id)}/fecha_entrega")
+        plazo_fabricacion_response = requests.get(f"{base_url}/getvariablebycase/{int(case_id)}/plazo_fabricacion")
+
+        # Verificar si las respuestas fueron exitosas
+        if fecha_inicio_response.status_code != 200 or plazo_fabricacion_response.status_code != 200:
+            return "Error al obtener la información de fecha de inicio o plazo de fabricación", 500
+
+        fecha_inicio = fecha_inicio_response.json()
+        plazo_fabricacion_str = plazo_fabricacion_response.json()
+
+        # Convertir plazo de fabricación a entero
+        try:
+            plazo_fabricacion = int(plazo_fabricacion_str)
+        except ValueError:
+            return "El plazo de fabricación no es un número válido", 400
+
+        # Calcular la fecha de fin
+        fecha_fin = datetime.strptime(fecha_inicio, "%Y-%m-%d") + timedelta(days=plazo_fabricacion)
+
+        # Obtener espacios disponibles
+        espacios_disponibles = []
+        for espacio, reservas in reservas_espacios.items():
+            disponible = True
+            for reserva in reservas:
+                reserva_inicio = datetime.strptime(reserva["fecha_inicio"], "%Y-%m-%d")
+                reserva_fin = datetime.strptime(reserva["fecha_fin"], "%Y-%m-%d")
+
+                if fecha_inicio < reserva_fin and fecha_fin > reserva_inicio:
+                    disponible = False
+                    break
+
+            if disponible:
+                espacios_disponibles.append(espacio)
+            print(espacios_disponibles)
+        return jsonify({"espacios_disponibles": espacios_disponibles})
+
+
+
 
 
 if __name__ == "__main__":
