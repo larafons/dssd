@@ -205,6 +205,7 @@ def submit_materials():
                 elif any(task for task in tasks_data if task["name"] == "Establecer materiales y cantidades" and task["state"] == "ready"):
                     return render_template('materials.html')
                 else:
+                    print (tasks_data)
                     return "Estado desconocido. Por favor, revisa las tareas pendientes en Bonita."
             else:
                 return "Error al consultar las tareas pendientes en Bonita."

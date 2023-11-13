@@ -1,12 +1,10 @@
-from flask import Flask, request
+from flask import Flask, jsonify, request
 import jwt
 import datetime
 import secrets
 from functools import wraps
 import requests
 from flask_restx import Api, Resource, fields
-
-base_url = "http://localhost:5000" 
 
 authorizations = {
     'Bearer Auth': {
@@ -65,7 +63,7 @@ reservas = {
 
 reservas_espacios = {
     "espacio_1": [{"fecha_inicio": "2023-11-10", "fecha_fin": "2023-12-20"}, ],
-    "espacio_2": [{"fecha_inicio": "2024-02-11", "fecha_fin": "2024-03-28"}, {"fecha_inicio": "2024-05-11", "fecha_fin": "2023-06-28"}],
+    "espacio_2": [{"fecha_inicio": "2024-02-11", "fecha_fin": "2024-03-28"}, {"fecha_inicio": "2024-05-11", "fecha_fin": "2024-06-28"}],
     "espacio_3": [],
     "espacio_4": [],
     "espacio_5": [],
@@ -80,6 +78,11 @@ login_model = api.model('Login', {
     'password': fields.String(required=True, description='Contraseña del usuario'),
 })
 
+consulta_espacio_model = api.model('Consulta espacio', {
+    'fecha_inicio': fields.String(required=True, description='Fecha de inicio de la reserva del espacio'),
+    'cant_dias': fields.Integer(required=True, description='Cantidad de dias a reservar'),
+})
+
 reserva_model = api.model('Reserva', {
     'material': fields.String(required=True, description='Tipo de material (algodon, metal, madera o poliester)'),
     'name': fields.String(required=True, description='Nombre del proveedor'),
@@ -88,7 +91,8 @@ reserva_model = api.model('Reserva', {
 
 reserva_espacio_model = api.model('Reserva espacio', {
     'fecha_inicio': fields.String(required=True, description='Fecha de inicio de la reserva del espacio'),
-    'fecha_fin': fields.String(required=True, description='Fecha de fin de la reserva del espacio')
+    'cant_dias': fields.Integer(required=True, description='Cantidad de dias a reservar'),
+    'espacio': fields.String(required=True, description='Nombre del espacio a reservar'),
 })
 
 model_material_busqueda = api.model('MaterialBusqueda', {
@@ -199,8 +203,6 @@ class BuscarResource(Resource):
         else:
             return {"message": "No se encontraron proveedores que cumplan con los criterios"}, 404
 
-
-
 # Recurso para reservar proveedores
 @ns.route('/reservar')
 class ReservarResource(Resource):
@@ -260,47 +262,70 @@ class CancelarResource(Resource):
 # PROBAR    
 @ns.route('/consultar_espacios')
 class ConsultarEspaciosResource(Resource):
+    @ns.doc(security='Bearer Auth')
+    @ns.expect(consulta_espacio_model)
     @verify_token
+    @ns.response(200, 'Consulta exitosa')
+    @ns.response(400, 'Consulta invalida')
+    @ns.response(401, 'Token inválido, expirado o no proporcionado')
+    @ns.response(404, 'espacio de fabricación no disponible para la fecha indicada')
     def post(self):
-        case_id = requests.get(f"{base_url}/get_case_id")
-        # Obtener la fecha de inicio y el plazo de fabricación
-        fecha_inicio_response = requests.get(f"{base_url}/getvariablebycase/{int(case_id)}/fecha_entrega")
-        plazo_fabricacion_response = requests.get(f"{base_url}/getvariablebycase/{int(case_id)}/plazo_fabricacion")
+        data = request.get_json()
+        fecha_inicio = data.get("fecha_inicio")
+        cant_dias = data.get("cant_dias")
 
         # Verificar si las respuestas fueron exitosas
-        if fecha_inicio_response.status_code != 200 or plazo_fabricacion_response.status_code != 200:
-            return "Error al obtener la información de fecha de inicio o plazo de fabricación", 500
-
-        fecha_inicio = fecha_inicio_response.json()
-        plazo_fabricacion_str = plazo_fabricacion_response.json()
-
-        # Convertir plazo de fabricación a entero
-        try:
-            plazo_fabricacion = int(plazo_fabricacion_str)
-        except ValueError:
-            return "El plazo de fabricación no es un número válido", 400
-
+        if not fecha_inicio or cant_dias <= 0:
+            return {"message": "Consulta invalida"}, 400
+        
         # Calcular la fecha de fin
-        fecha_fin = datetime.strptime(fecha_inicio, "%Y-%m-%d") + timedelta(days=plazo_fabricacion)
+        fecha_fin = datetime.datetime.strptime(fecha_inicio, "%Y-%m-%d") + datetime.timedelta(days=cant_dias)
+        fecha_inicio = datetime.datetime.strptime(fecha_inicio, "%Y-%m-%d")
 
         # Obtener espacios disponibles
         espacios_disponibles = []
         for espacio, reservas in reservas_espacios.items():
             disponible = True
             for reserva in reservas:
-                reserva_inicio = datetime.strptime(reserva["fecha_inicio"], "%Y-%m-%d")
-                reserva_fin = datetime.strptime(reserva["fecha_fin"], "%Y-%m-%d")
-
-                if fecha_inicio < reserva_fin and fecha_fin > reserva_inicio:
+                reserva_inicio = datetime.datetime.strptime(reserva["fecha_inicio"], "%Y-%m-%d")
+                reserva_fin = datetime.datetime.strptime(reserva["fecha_fin"], "%Y-%m-%d")
+                # chequeo si mi fecha de inicio o mi fecha de fin estan dentro del rango de las reservas
+                # ya establecidas. En caso de estarlo, no se agregan a los espacios que hay disponibles. (por eso el break)
+                if (fecha_inicio > reserva_inicio and fecha_inicio < reserva_fin) or ( fecha_fin > reserva_inicio and fecha_fin < reserva_fin) or (fecha_inicio < reserva_inicio and fecha_fin > reserva_fin):
                     disponible = False
                     break
 
             if disponible:
                 espacios_disponibles.append(espacio)
             print(espacios_disponibles)
-        return jsonify({"espacios_disponibles": espacios_disponibles})
+        return {"message": "Búsqueda exitosa", "result": espacios_disponibles}, 200
 
+@ns.route('/reservar_espacio')
+class ConsultarEspaciosResource(Resource):
+    # @ns.doc(security='Bearer Auth')
+    @ns.expect(reserva_espacio_model)
+    # @verify_token
+    @ns.response(200, 'Reserva exitosa')
+    @ns.response(400, 'Consulta invalida')
+    @ns.response(401, 'Token inválido, expirado o no proporcionado')
+    def post(self):
+        data = request.get_json()
+        fecha_inicio = data.get("fecha_inicio")
+        cant_dias = data.get("cant_dias")
+        nombre_espacio = data.get("espacio")
+        print(reservas_espacios["espacio_3"])
+        # Verificar si las respuestas fueron exitosas
+        if not fecha_inicio or cant_dias <= 0 or nombre_espacio not in reservas_espacios.keys():
+            return {"message": "Consulta invalida"}, 400
+        
+        # Calcular la fecha de fin
+        fecha_fin = datetime.datetime.strptime(fecha_inicio, "%Y-%m-%d") + datetime.timedelta(days=cant_dias)
 
+        fecha_fin = fecha_fin.strftime("%Y-%m-%d")
+        # Agregarlo a espacios disponibles        
+        reservas_espacios[nombre_espacio].append({"fecha_inicio": fecha_inicio, "fecha_fin": fecha_fin})
+        print(reservas_espacios)
+        return {"message": "reserva exitosa"}, 200
 
 
 
