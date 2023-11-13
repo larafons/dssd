@@ -84,9 +84,20 @@ consulta_espacio_model = api.model('Consulta espacio', {
 })
 
 reserva_model = api.model('Reserva', {
-    'material': fields.String(required=True, description='Tipo de material (algodon, metal, madera o poliester)'),
-    'name': fields.String(required=True, description='Nombre del proveedor'),
-    'cantidad': fields.Integer(required=True, description='Cantidad a reservar'),
+    'materiales_reserva': fields.Nested(api.model('Materiales_reserva', {
+        'material_1': fields.String(description='Tipo de material 1'),
+        'cantidad_1': fields.Integer(description='Cantidad de material 1'),
+        'name_1': fields.String(description='Nombre del proveedor 1'),
+        'material_2': fields.String(description='Tipo de material 2'),
+        'cantidad_2': fields.Integer(description='Cantidad de material 2'),
+        'name_2': fields.String(description='Nombre del proveedor 2'),
+        'material_3': fields.String(description='Tipo de material 3'),
+        'cantidad_3': fields.Integer(description='Cantidad de material 3'),
+        'name_3': fields.String(description='Nombre del proveedor 3'),
+        'material_4': fields.String(description='Tipo de material 4'),
+        'cantidad_4': fields.Integer(description='Cantidad de material 4'),
+        'name_4': fields.String(description='Nombre del proveedor 4'),
+    }))
 })
 
 reserva_espacio_model = api.model('Reserva espacio', {
@@ -215,20 +226,42 @@ class ReservarResource(Resource):
     @ns.response(404, 'Proveedor no encontrado')
     def post(self):
         data = request.get_json()
-        material = data.get("material")
-        proveedor = data.get("name")
-        cantidad_reserva = data.get("cantidad")
+        materiales_data = data.get("materiales_reserva")
+        
+        # Crear una lista para las reservas que se van a validar
+        reservas_validar = []
+        for i in range(1, 5):  # Iterar sobre los 4 grupos de materiales
+            material = materiales_data.get(f'material_{i}', '')
+            cantidad_reserva = materiales_data.get(f'cantidad_{i}', 0)
+            proveedor = materiales_data.get(f'name_{i}', '')
+            
+            if material and proveedor and cantidad_reserva > 0:  # Solo procesar si se proporcionaron los tres valores
+                # Verificar si el proveedor y la cantidad son válidos antes de reservar
+                encontrado = False
+                for prov in datos.get(material, []):
+                    if prov["name"] == proveedor:
+                        encontrado = True
+                        if prov["cantidad"] < cantidad_reserva:
+                            return {"status": "No hay suficiente cantidad para reservar"}, 400
+                        else:
+                            reservas_validar.append((material, proveedor, cantidad_reserva, prov["fecha"]))
+                        break
+                if not encontrado:
+                    return {"status": "Proveedor no encontrado"}, 404
 
-        for prov in datos[material]:
-            if prov["name"] == proveedor:
-                if prov["cantidad"] >= cantidad_reserva:
+        # Si se pasa la validación, proceder a reservar todos los materiales
+        for material, proveedor, cantidad_reserva, fecha_reserva in reservas_validar:
+            for prov in datos[material]:
+                if prov["name"] == proveedor:
                     prov["cantidad"] -= cantidad_reserva
-                    reservas[material].append({"name": proveedor, "cantidad": cantidad_reserva, "fecha_reserva": prov["fecha"]})
-                    print(reservas)
-                    return {"status": "Reserva realizada con éxito"}
-                else:
-                    return {"status": "No hay suficiente cantidad para reservar"}, 400
-        return {"status": "Proveedor no encontrado"}, 404
+                    reservas[material].append({
+                        "name": proveedor, 
+                        "cantidad": cantidad_reserva, 
+                        "fecha_reserva": fecha_reserva
+                    })
+        print(reservas)
+        return {"status": "Reserva realizada con éxito"}, 200
+
 
 @ns.route('/cancelar')
 class CancelarResource(Resource):
