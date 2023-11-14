@@ -63,6 +63,24 @@ def set_materials():
 def design_collection():
     return render_template('design.html')
 
+@app.route('/operators', methods=['GET'])
+@login_required
+@require_role('operator')
+def operator_page():
+    response = requests.get(f"{base_url}/get_case_id")
+    case_id = response.json()
+    response = requests.get(f"{base_url}/get_pending_tasks/{case_id}")
+    tasks= response.json()
+    filtered_tasks = [task for task in tasks if task['name'] in ['Establecer materiales y cantidades', 'Reservar materiales', 'Confirmar Plan de Fabricación', 'Consultas de plazos', 'Cancelar reservas']]
+    print(filtered_tasks)
+    return render_template('operator.html', tasks=filtered_tasks)
+
+@app.route('/marketing', methods=['GET'])
+@login_required
+@require_role('marketing')
+def marketing_page():
+    return render_template('marketing.html')
+
 @app.route('/get_variables/<string:case_id>', methods=['GET'])
 @login_required
 def get_variables(case_id):
@@ -90,7 +108,13 @@ def submit_login():
         role_data = requests.get(f"{base_url}/get_role_data/{role_json[0]['role_id']}")
         role_data_json = role_data.json()
         token = response.json()
-        resp = make_response(redirect('/design_collection'))
+        #Redirige a a persona dependiendo del rol
+        if (role_data_json["name"] == 'designer'):
+            resp = make_response(redirect('/design_collection'))
+        elif (role_data_json["name"] == 'operator'):
+            resp = make_response(redirect('/operators'))
+        elif (role_data_json["name"] == 'marketing'):
+            resp = make_response(redirect('/marketing'))
         # Establecer la cookie X-Bonita-API-Token en la respuesta
         resp.set_cookie('role', role_data_json["name"])
         resp.set_cookie('X-Bonita-API-Token', token["bonita_token"])
