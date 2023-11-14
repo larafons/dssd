@@ -276,7 +276,7 @@ class Process:
     
     @staticmethod
     def get_all_variables_by_case(case_id):
-        var_bonita = cookieJar.get(f"{base_url}API/bpm/caseVariable?f=case_id={case_id}")
+        var_bonita = cookieJar.get(f"{base_url}API/bpm/caseVariable?f=case_id={case_id}&c=100")
         return var_bonita.json()
     
     @staticmethod
