@@ -259,9 +259,9 @@ def confirmar_proveedores():
         for key, value in materials_data.items():
             if material == value:
                 consulta = {
-                    "material": material,
-                    "name": prov,
-                    "cantidad": materials_data[f"cantidad_{key[-1]}"]
+                    f"material_{key[-1]}": material,
+                    f"cantidad_{key[-1]}": materials_data[f"cantidad_{key[-1]}"],
+                    f"name_{key[-1]}": prov
                 }
                 consulta_json = json.dumps(consulta)
                 response = requests.put(f"{base_url}/setvariablebycase/{int(case_id)}/reserva_material_{key[-1]}/{consulta_json}/java.lang.String")
