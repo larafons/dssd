@@ -44,15 +44,13 @@
         <h1 class="text-center">Seleccione un espacio</h1>
         <form method="POST" action="/confirmar_espacio">
             <div class="form-group">
-                <label for="{{ espacio }}">Espacios disponibles para las fechas solicitadas:</label>
-                <select id="{{ espacio }}" name="{{ espacio }}" class="form-control">
+                <label for="{{ espacio_seleccionado }}">Espacios disponibles para las fechas solicitadas:</label>
+                <select id="{{ espacio_seleccionado }}" name="espacio" class="form-control">
                     {% for espacio in espacios %}
-                    <option value="{{ espacio['nombre'] }}">{{ espacio['nombre'] }}</option>
+                    <option value="{{ espacio }}">{{ espacio }}</option>
                     {% endfor %}
                 </select>
             </div>
-            {% endfor %}
-
             <div class="form-group text-center mt-4">
                 <input type="submit" class="btn btn-primary" value="Confirmar">
             </div>

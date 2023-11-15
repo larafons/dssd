@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Reserva de materiales</title>
+    <title>Formulario de materiales</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-rbsA2VBKQhggwzxH7pPCaAqO46MgnOM80zW1RWuH61DGLwZJEdK2Kadq2F9CUG65" crossorigin="anonymous">    
     <style>
         body {
@@ -41,26 +41,27 @@
 </head>
 <body>
     <div class="container">
-        <h1 class="text-center">Seleccionar proveedores</h1>
-        <form method="POST" action="/confirmar_proveedores">
-            {% for material, proveedores in proveedores.items() %}
-            <div class="form-group">
-                <label for="{{ material }}">Proveedor para {{ material }}:</label>
-                <select id="{{ material }}" name="{{ material }}" class="form-control">
-                    {% for proveedor in proveedores %}
-                    <option value="{{ [proveedor['name'], proveedor['fecha']] | join(',') }}">{{ proveedor['name'] }} (Fecha: {{ proveedor['fecha'] }})</option>
-                    {% endfor %}
-                </select>
-            </div>
-            {% endfor %}
-
-            <div class="form-group text-center mt-4">
-                <input type="submit" class="btn btn-primary" value="Confirmar">
-            </div>
+        <h1 class="text-center">¿Desea confirmar el plan de fabricacion?</h1>
+        <form method="POST" action="/confirm_plan">
+            <p>Espacio: {{ espacio }}</p>
+            <p>Fecha de entrega: {{ fecha }}</p>
+            <p>Fecha de lanzamiento: {{ lanzamiento }}</p>
+            <p>Materiales:</p>
+            <ul>
+                {% for material in materiales %}
+                    <li>{{ material }}</li>
+                {% endfor %}
+            </ul>
+            <input type="radio" id="confirmo" name="confirmo" value="true">
+            <label for="confirmo">Confirmar</label><br>
+            <input type="radio" id="no_confirmo" name="confirmo" value="false">
+            <label for="no_confirmo">Cancelar</label><br>
+            <input type="submit" value="Submit">
         </form>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-kenU1KFdBIe4zVF0s0G1M5b4hcpxyD9F7jL+jjXkk+Q2h455rYXK/7HAuoJl+0I4" crossorigin="anonymous"></script>
+    
 
 </body>
 </html>
