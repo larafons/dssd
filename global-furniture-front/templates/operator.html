@@ -44,8 +44,9 @@
         <h1 class="text-center" style="margin-top: 3%;">Seleccione la coleccion con la que quiere trabajar</h1>
         {% for task in tasks %}
             <div class="container">
-                <h6>ID de la coleccion: {{ task.caseId }}</h6>
-                <p>Tarea pendiente: {{ task.name }}</p>
+                <h6>ID de la coleccion: {{ task['caseId'] }}</h6>
+                <p>Tarea pendiente: {{ task['name'] }}</p>
+                <button onclick="irAlForm('{{ task.caseId }}')">Ver más</button>
             </div>
-            {% endfor %}
+        {% endfor %}
 </html>

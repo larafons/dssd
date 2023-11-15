@@ -142,6 +142,11 @@ def get_material(material, fecha, cantidad):
 def get_case_id():
     return Process.get_case_id()
 
+@app.route('/get_all_pending_tasks', methods=['GET'])
+def get_all_pending():
+    response = Process.get_all_pending_tasks()
+    return jsonify(response)
+
 
 class Process:
     APItoken =''
@@ -228,6 +233,11 @@ class Process:
     @staticmethod
     def get_pending_tasks(case_id):
         response = cookieJar.get(f"{base_url}API/bpm/userTask?f=rootCaseId={case_id}")
+        return response.json()
+    
+    @staticmethod
+    def get_all_pending_tasks():
+        response = cookieJar.get(f"{base_url}API/bpm/userTask?c=100")
         return response.json()
 
     @staticmethod

@@ -67,11 +67,10 @@ def design_collection():
 @login_required
 @require_role('operator')
 def operator_page():
-    response = requests.get(f"{base_url}/get_case_id")
-    case_id = response.json()
-    response = requests.get(f"{base_url}/get_pending_tasks/{case_id}")
+    response = requests.get(f"{base_url}/get_all_pending_tasks")
     tasks= response.json()
-    filtered_tasks = [task for task in tasks if task['name'] in ['Establecer materiales y cantidades', 'Reservar materiales', 'Confirmar Plan de Fabricación', 'Consultas de plazos', 'Cancelar reservas']]
+    print(tasks)
+    filtered_tasks = [task for task in tasks if task['name'] in ('Establecer materiales y cantidades', 'Reservar materiales', 'Confirmar Plan de Fabricación', 'Consultas de plazos', 'Cancelar reservas')]
     print(filtered_tasks)
     return render_template('operator.html', tasks=filtered_tasks)
 
