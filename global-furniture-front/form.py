@@ -186,7 +186,7 @@ def submit_materials():
         "materiales": materiales_dict,
         "fecha_lanzamiento": request.form.get('fecha_lanzamiento')
     }
-
+    print(materiales_dict)
     #Seteo de variables de proceso los materiales y cantidades como si fuera un dump de json
     materials_json = json.dumps(data["materiales"])
 
@@ -349,24 +349,17 @@ def confirmar_espacio():
                     print('entra')
                     #Obtengo la respuesta de la api que se almaceno como var de proceso en bonita
                     espacio = requests.get(f"{base_url}/getvariablebycase/{int(case_id)}/espacio_seleccionado")
-                    espacio = espacio.json()
+                    espacio = espacio.json()['espacio_seleccionado']
                     fecha_entrega = requests.get(f"{base_url}/getvariablebycase/{int(case_id)}/fecha_entrega")
-                    fecha_entrega = fecha_entrega.json()
+                    fecha_entrega = fecha_entrega.json()['fecha_entrega']
                     lanzamiento = requests.get(f"{base_url}/getvariablebycase/{int(case_id)}/fecha_lanzamiento")
-                    lanzamiento = lanzamiento.json()
+                    lanzamiento = lanzamiento.json()['fecha_lanzamiento']
                     materiales = []
-                    material_1 = requests.get(f"{base_url}/getvariablebycase/{int(case_id)}/reserva_material_1")
-                    material_1 = material_1.json()
-                    material_2 = requests.get(f"{base_url}/getvariablebycase/{int(case_id)}/reserva_material_1")
-                    material_2 = material_2.json()
-                    material_3 = requests.get(f"{base_url}/getvariablebycase/{int(case_id)}/reserva_material_1")
-                    material_3 = material_3.json()
-                    material_4 = requests.get(f"{base_url}/getvariablebycase/{int(case_id)}/reserva_material_1")
-                    material_4 = material_4.json()
-                    materiales.append(material_1)
-                    materiales.append(material_2)
-                    materiales.append(material_3)
-                    materiales.append(material_4)
+                    for i in range(1, 5):
+                        material = requests.get(f"{base_url}/getvariablebycase/{int(case_id)}/reserva_material_{i}")
+                        material = material.json()[f"reserva_material_{i}"]
+                        if material[f"cantidad_{i}"] > 0:
+                            materiales.append(material[f"material_{i}"] + " : " + str(material[f"cantidad_{i}"]) + " unidades para la fecha " + material[f"fecha_{i}"])
                     print(materiales)
                     print(espacio)
                     print(fecha_entrega)

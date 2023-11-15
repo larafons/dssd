@@ -5,6 +5,7 @@ import secrets
 from functools import wraps
 import requests
 from flask_restx import Api, Resource, fields
+import time
 
 authorizations = {
     'Bearer Auth': {
@@ -52,6 +53,8 @@ datos = {
         {"name": "Proveedor5", "cantidad": 500, "fecha": "2023-12-05"},
     ],
 }
+
+hitos = ["Ya estan disponibles todos los materiales solicitados", "A partir de hoy esta disponible el espacio de fabricacion", "Todos los materiales fueron enviados a la fabrica", "Inicio el proceso de ensamblado", "Finalizo la etapa de fabricacion: coleccion terminada"]
 
 # la reserva de espacios tiene 2 elementos, fecha de inicio y fecha de fin
 reservas = {
@@ -221,15 +224,13 @@ def parse_and_format_date(date_string):
         return None
 
 
-#getters
-
 @ns.route('/get_reservas')
 class GetResource(Resource):
     @ns.response(200, 'Búsqueda exitosa')
     @ns.response(400, 'Formato de fecha inválido')
     @ns.response(401, 'Token inválido, expirado o no proporcionado')
     def get(self):
-        res = { "espacios": reservas,
+        res = { "reservas_materiales": reservas,
                 "reservas_espacios": reservas_espacios}
         return res
     
@@ -256,7 +257,6 @@ class BuscarResource(Resource):
         cants = [v for k, v in materiales.items() if "cantidad_" in k]
         material_cant_list = [(mat, cant) for mat, cant in zip(mats, cants) if mat]
 
-
         results = {}
         for material, cant in material_cant_list:
             if material not in datos:
@@ -272,9 +272,9 @@ class BuscarResource(Resource):
 # Recurso para reservar proveedores
 @ns.route('/reservar')
 class ReservarResource(Resource):
-    # @ns.doc(security='Bearer Auth')
+    @ns.doc(security='Bearer Auth')
     @ns.expect(reserva_model)
-    # @verify_token
+    @verify_token
     @ns.response(200, 'Reserva exitosa')
     @ns.response(400, 'No hay suficiente cantidad para reservar')
     @ns.response(401, 'Token inválido, expirado o no proporcionado')
@@ -314,7 +314,6 @@ class ReservarResource(Resource):
                         "cantidad": cantidad_reserva, 
                         "fecha_reserva": fecha_reserva
                     })
-        print(reservas)
         return {"status": "Reserva realizada con éxito"}, 200
 
 
@@ -342,7 +341,7 @@ class CancelarResource(Resource):
 
                 if material and cantidad and name and fecha:
                     if cantidad != 0 and name != '':
-                        ok = cancelar_material(material, cantidad, name, fecha)
+                        ok = cancelar_material(material, name, cantidad, fecha)
                         if not ok:
                             return {"status": "No se pudo cancelar: material inexistente."}, 404
             return {'message': 'Cancelacion exitosa'}, 200
@@ -388,14 +387,13 @@ class ConsultarEspaciosResource(Resource):
 
             if disponible:
                 espacios_disponibles.append(espacio)
-            print(espacios_disponibles)
         return {"message": "Búsqueda exitosa", "result": espacios_disponibles}, 200
 
 @ns.route('/reservar_espacio')
 class ConsultarEspaciosResource(Resource):
-    # @ns.doc(security='Bearer Auth')
+    @ns.doc(security='Bearer Auth')
     @ns.expect(reserva_espacio_model)
-    # @verify_token
+    @verify_token
     @ns.response(200, 'Reserva exitosa')
     @ns.response(400, 'Consulta invalida')
     @ns.response(401, 'Token inválido, expirado o no proporcionado')
@@ -404,7 +402,6 @@ class ConsultarEspaciosResource(Resource):
         fecha_inicio = data.get("fecha_inicio")
         cant_dias = data.get("cant_dias")
         nombre_espacio = data.get("espacio")
-        print(reservas_espacios["espacio_3"])
         # Verificar si las respuestas fueron exitosas
         if not fecha_inicio or cant_dias <= 0 or nombre_espacio not in reservas_espacios.keys():
             return {"message": "Consulta invalida"}, 400
@@ -415,37 +412,36 @@ class ConsultarEspaciosResource(Resource):
         fecha_fin = fecha_fin.strftime("%Y-%m-%d")
         # Agregarlo a espacios disponibles        
         reservas_espacios[nombre_espacio].append({"fecha_inicio": fecha_inicio, "fecha_fin": fecha_fin})
-        print(reservas_espacios)
         return {"message": "reserva exitosa"}, 200
 
-# @ns.route('/consultar_plazos')
-# class ConsultarPlazosResource(Resource):
-#     @ns.doc(security='Bearer Auth')
-#     # @ns.expect(cancelar_model)
-#     @verify_token
-#     @ns.response(200, 'Cancelación exitosa')
-#     @ns.response(400, 'Formato de fecha inválido')
-#     @ns.response(401, 'Token inválido, expirado o no proporcionado')
-#     @ns.response(404, 'No se pudo cancelar: reserva inexistente.')
-#     def get(self):
-#         data = request.json
-#         material = data["material"]
-#         proveedor = data["name"]
-#         cantidad_cancelada = data["cantidad"]
-#         fecha_cancelar = data["fecha"]
-#         formatted_date = parse_and_format_date(fecha_cancelar)
-#         print(formatted_date)
-#         if not formatted_date:
-#             return {"message": "Formato de fecha inválido. Por favor, use el formato 'año-mes-día'."}, 400
-#         for reserva in reservas[material]:
-#             print(reservas)
-#             if (reserva["name"] == proveedor and reserva["cantidad"] == cantidad_cancelada and reserva["fecha_reserva"] == formatted_date):
-#                 for x in datos[material]:
-#                     if (x["name"] == proveedor):
-#                         x["cantidad"] += cantidad_cancelada
-#                 reservas[material].remove(reserva)
-#                 return {"status": "Reserva cancelada con éxito"}
-#         return {"status": "No se pudo cancelar: reserva inexistente."}, 404
+@ns.route('/consultar_hitos')
+class ConsultarHitosResource(Resource):
+    @ns.doc(security='Bearer Auth')
+    @verify_token
+    @ns.response(200, 'Hito retornado')
+    @ns.response(401, 'Token inválido, expirado o no proporcionado')
+    def get(self):
+        time.sleep(1)
+        if hitos:
+            #Change and put the pop in a json where the key es "message"
+            return {"mensaje": f"{hitos.pop(0)}"}, 200
+        else:
+            return {"mensaje": "Finalizo la etapa de fabricacion: coleccion terminada"}, 200
+
+@ns.route('/consultar_fin')
+class ConsultarFinResource(Resource):
+    @ns.doc(security='Bearer Auth')
+    @verify_token
+    @ns.response(200, 'Coleccion finalizada')
+    @ns.response(401, 'Token inválido, expirado o no proporcionado')
+    @ns.response(402, 'Coleccion en desarrollo')
+    def get(self):
+        time.sleep(1)
+        if hitos:
+            return {"mensaje": "Coleccion en desarrollo"}, 402
+        else:
+            return {"mensaje": "Coleccion finalizada"}, 200
+
 
 if __name__ == "__main__":
     app.run(port=5002,debug=True)
