@@ -42,7 +42,7 @@
 <body>
     <div class="container">
         <h1 class="text-center">¿Desea confirmar el plan de fabricacion?</h1>
-        <form method="POST" action="/confirm_plan">
+        <form method="POST" action="/confirm_plan/{{case}}">
             <p>Espacio: {{ espacio }}</p>
             <p>Fecha de entrega: {{ fecha_entrega }}</p>
             <p>Fecha de lanzamiento: {{ lanzamiento }}</p>

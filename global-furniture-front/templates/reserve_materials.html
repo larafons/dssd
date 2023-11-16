@@ -42,7 +42,7 @@
 <body>
     <div class="container">
         <h1 class="text-center">Seleccionar proveedores</h1>
-        <form method="POST" action="/confirmar_proveedores">
+        <form method="POST" action="/confirmar_proveedores/{{case}}">
             {% for material, proveedores in proveedores.items() %}
             <div class="form-group">
                 <label for="{{ material }}">Proveedor para {{ material }}:</label>

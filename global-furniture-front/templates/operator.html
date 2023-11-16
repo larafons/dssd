@@ -46,13 +46,13 @@
             <div class="container">
                 <h6>ID de la coleccion: {{ task['caseId'] }}</h6>
                 <p>Tarea pendiente: {{ task['name'] }}</p>
-                <button class="btn-primary" onclick="verMas('{{ task.caseId }}','{{ task.name }}')">Ver más</button>
+                <button class="btn-primary" onclick="verMas('{{ task.caseId }}')">Ver más</button>
             </div>
         {% endfor %}
 
         <script>
             function verMas(caseId, name) {
-                window.location.href = `/materials/${caseId}/${name}`;
+                window.location.href = `/set_materials/${caseId}`;
             }
         </script>
 </html>

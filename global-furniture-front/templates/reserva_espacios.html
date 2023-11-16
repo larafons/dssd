@@ -42,7 +42,7 @@
 <body>
     <div class="container">
         <h1 class="text-center">Seleccione un espacio</h1>
-        <form method="POST" action="/confirmar_espacio">
+        <form method="POST" action="/confirmar_espacio/{{case}}">
             <div class="form-group">
                 <label for="{{ espacio_seleccionado }}">Espacios disponibles para las fechas solicitadas:</label>
                 <select id="{{ espacio_seleccionado }}" name="espacio" class="form-control">

@@ -51,11 +51,11 @@ def check_role(route_function):
 def login():
     return render_template('login.html')
 
-@app.route('/set_materials', methods=['GET'])
+@app.route('/set_materials/<int:case_id>', methods=['GET'])
 @login_required
 @require_role('operator')
-def set_materials():
-    return render_template('materials.html')
+def set_materials(case_id):
+    return render_template('materials.html', case =case_id)
 
 @app.route('/design_collection', methods=['GET'])
 @login_required
@@ -86,11 +86,6 @@ def operator_page():
     filtered_tasks = [task for task in tasks if task['name'] in ('Establecer materiales y cantidades', 'Reservar materiales', 'Confirmar Plan de Fabricación', 'Consultas de plazos', 'Cancelar reservas')]
     print(filtered_tasks)
     return render_template('operator.html', tasks=filtered_tasks)
-
-@app.route('/materials/<int:case_id>/<string:task_name>', methods=['GET'])
-@login_required
-def materials(case_id, task_name):
-    return render_template('materials.html', case =case_id)
 
 @app.route('/marketing', methods=['GET'])
 @login_required
@@ -258,9 +253,9 @@ def submit_materials(case=-1):
                     proveedores = response_proveedores.json()
                     #Casteo de string a json diccionario en python
                     proveedores_data = json.loads(proveedores['proveedores'])
-                    return render_template('reserve_materials.html',proveedores=proveedores_data)
+                    return render_template('reserve_materials.html',proveedores=proveedores_data, case= case_id)
                 elif any(task for task in tasks_data if task["name"] == "Establecer materiales y cantidades" and task["state"] == "ready"):
-                    return render_template('materials.html')
+                    return render_template('materials.html', case= case_id)
                 else:
                     print (tasks_data)
                     return "Estado desconocido. Por favor, revisa las tareas pendientes en Bonita."
@@ -347,18 +342,22 @@ def confirmar_proveedores(case=-1):
                     #Casteo de string a json diccionario en python
                     espacios_data = json.loads(espacios['espacios'])
                     print(espacios_data)
-                    return render_template('reserva_espacios.html',espacios=espacios_data)
+                    return render_template('reserva_espacios.html',espacios=espacios_data,case= case_id)
 
 
-@app.route("/confirmar_espacio", methods=["POST"])
+@app.route("/confirmar_espacio/<int:case>", methods=["POST"])
 @require_role('operator')
 @login_required
-def confirmar_espacio():
+def confirmar_espacio(case=-1):
     espacio_seleccionado = request.form.get('espacio')
     print(espacio_seleccionado)
-    #Obtenemos el case id
-    response = requests.get(f"{base_url}/get_case_id")
-    case_id = response.json()
+    if case == -1: 
+        # Obtener el case id
+        response = requests.get(f"{base_url}/get_case_id")
+        case_id = response.json()
+    else:
+        # Utilizar el valor proporcionado para case
+        case_id = case
     response = requests.put(f"{base_url}/setvariablebycase/{int(case_id)}/espacio_seleccionado/{espacio_seleccionado}/java.lang.String")
     # Buscar la tarea actual por case_id
     response1 = requests.get(f"{base_url}/searchactivitybycase/{case_id}/Reservar-espacios-de-fabricacion-para-la-coleccion")
@@ -389,24 +388,32 @@ def confirmar_espacio():
                     lanzamiento = lanzamiento.json()['fecha_lanzamiento']
                     materiales = []
                     for i in range(1, 5):
-                        material = requests.get(f"{base_url}/getvariablebycase/{int(case_id)}/reserva_material_{i}")
-                        material = material.json()[f"reserva_material_{i}"]
-                        if material[f"cantidad_{i}"] > 0:
-                            materiales.append(material[f"material_{i}"] + " : " + str(material[f"cantidad_{i}"]) + " unidades para la fecha " + material[f"fecha_{i}"])
+                        x = str(i)
+                        material = requests.get(f"{base_url}/getvariablebycase/{int(case_id)}/reserva_material_{x}")
+                        print(material)
+                        material =  json.loads(material.json()[f"reserva_material_{x}"])
+                        print(material)
+                        if material[f"cantidad_{x}"] > 0:
+                            materiales.append(material[f"material_{x}"] + " : " + str(material[f"cantidad_{x}"]) + " unidades para la fecha " + material[f"fecha_{x}"])
                     print(materiales)
                     print(espacio)
                     print(fecha_entrega)
                     print(lanzamiento)
-                    return render_template('confirmation.html',espacio=espacio,fecha_entrega=fecha_entrega,lanzamiento=lanzamiento,materiales=materiales)
+                    return render_template('confirmation.html',espacio=espacio,fecha_entrega=fecha_entrega,lanzamiento=lanzamiento,materiales=materiales, case= case_id)
 
 
-@app.route('/confirm_plan', methods=['POST'])
+@app.route('/confirm_plan/<int:case>', methods=['POST'])
 @require_role('operator')
 @login_required
-def confirm_plan():
+def confirm_plan(case=-1):
     confirmo = request.form.get('confirmo')
-    response = requests.get(f"{base_url}/get_case_id")
-    case_id = response.json()
+    if case == -1: 
+        # Obtener el case id
+        response = requests.get(f"{base_url}/get_case_id")
+        case_id = response.json()
+    else:
+        # Utilizar el valor proporcionado para case
+        case_id = case
     response = requests.put(f"{base_url}/setvariablebycase/{int(case_id)}/confirmo/{confirmo}/java.lang.Boolean")
     response1 = requests.get(f"{base_url}/searchactivitybycase/{case_id}/Confirmar-Plan-de-Fabricacion")
     task_id = response1.json()[0]['id']
@@ -419,7 +426,7 @@ def confirm_plan():
         #Retornar a index de operadores MODIFICAR
         return {"message": "Plan de fabricacion confirmado exitosamente!"}
     else:
-        return render_template('materials.html')
+        return render_template('materials.html', case= case_id)
 
 
 @app.route('/update_collection', methods=['POST'])
