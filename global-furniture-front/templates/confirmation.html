@@ -52,11 +52,14 @@
                     <li>{{ material }}</li>
                 {% endfor %}
             </ul>
-            <input type="radio" id="confirmo" name="confirmo" value="true">
-            <label for="confirmo">Confirmar</label><br>
-            <input type="radio" id="no_confirmo" name="confirmo" value="false">
-            <label for="no_confirmo">Cancelar</label><br>
-            <input type="submit" value="Submit">
+            <div style="display: inline-block; align-items: center;">
+                <input type="radio" id="confirmo" name="confirmo" value="true">
+                <label for="confirmo">Confirmar plan de fabricación</label><br>
+                <input type="radio" id="no_confirmo" name="confirmo" value="false">
+                <label for="no_confirmo">Cancelar</label><br>
+            </div>
+            <br>
+            <input style="align-self: center;" type="submit" value="Confirmar selección">
         </form>
     </div>
 
