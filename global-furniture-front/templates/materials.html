@@ -41,8 +41,8 @@
 </head>
 <body>
     <div class="container">
-        <h1 class="text-center">Establecer materiales y cantidades</h1>
-        <form method="POST" action="/submit_materials">
+        <h1 class="text-center">Establecer materiales y cantidades para la coleccion {{ case }}</h1>
+        <form method="POST" action="/submit_materials/{{case}}">
             <div class="form-group">
                 <label>Material 1:</label>
                 <input type="text" class="form-control" name="material_1">
