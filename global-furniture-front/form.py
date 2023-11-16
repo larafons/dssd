@@ -63,6 +63,12 @@ def set_materials():
 def design_collection():
     return render_template('design.html')
 
+@app.route('/designers', methods=['GET'])
+@login_required
+@require_role('designer')
+def designers():
+    return render_template('designer.html')
+
 @app.route('/operators', methods=['GET'])
 @login_required
 @require_role('operator')
@@ -73,6 +79,11 @@ def operator_page():
     filtered_tasks = [task for task in tasks if task['name'] in ('Establecer materiales y cantidades', 'Reservar materiales', 'Confirmar Plan de Fabricación', 'Consultas de plazos', 'Cancelar reservas')]
     print(filtered_tasks)
     return render_template('operator.html', tasks=filtered_tasks)
+
+@app.route('/materials/<int:case_id>/<string:task_name>', methods=['GET'])
+@login_required
+def materials(case_id, task_name):
+    return render_template('materials.html', case =case_id)
 
 @app.route('/marketing', methods=['GET'])
 @login_required
@@ -109,7 +120,7 @@ def submit_login():
         token = response.json()
         #Redirige a a persona dependiendo del rol
         if (role_data_json["name"] == 'designer'):
-            resp = make_response(redirect('/design_collection'))
+            resp = make_response(redirect('/designers'))
         elif (role_data_json["name"] == 'operator'):
             resp = make_response(redirect('/operators'))
         elif (role_data_json["name"] == 'marketing'):
@@ -162,11 +173,10 @@ def submit_design():
         return "Error al iniciar el proceso"
 
 
-@app.route('/submit_materials', methods=['POST'])
+@app.route('/submit_materials/<int:case>', methods=['POST'])
 @login_required
-def submit_materials(): 
+def submit_materials(case=-1): 
     materiales_dict = {}
-
     # Iterar sobre los campos del formulario
     for i in range(1, 5):
         material = request.form.get(f'material_{i}') or ' '
@@ -185,12 +195,21 @@ def submit_materials():
     materials_json = json.dumps(data["materiales"])
 
     #Obtenemos el case id
-    response = requests.get(f"{base_url}/get_case_id")
-    case_id = response.json()
+    #response = requests.get(f"{base_url}/get_case_id")
+    #case_id = response.json()
+
+    # Usar un valor predeterminado para case si es None
+    if case == -1: 
+        # Obtener el case id
+        response = requests.get(f"{base_url}/get_case_id")
+        case_id = response.json()
+    else:
+        # Utilizar el valor proporcionado para case
+        case_id = case
 
     # Setear las variables del proceso
-    response0 = requests.put(f"{base_url}/setvariablebycase/{int(case_id)}/fecha_lanzamiento/{data['fecha_lanzamiento']}/java.lang.String")
-    response = requests.put(f"{base_url}/setvariablebycase/{int(case_id)}/materials_cants/{materials_json}/java.lang.String")
+    response0 = requests.put(f"{base_url}/setvariablebycase/{case_id}/fecha_lanzamiento/{data['fecha_lanzamiento']}/java.lang.String")
+    response = requests.put(f"{base_url}/setvariablebycase/{case_id}/materials_cants/{materials_json}/java.lang.String")
 
     # Verificar si las variables se setearon correctamente
     if response.status_code != 200 or response0.status_code != 200:
@@ -237,9 +256,9 @@ def submit_materials():
     else:
         return "Error al asignar la tarea"
 
-@app.route('/confirmar_proveedores', methods=['POST'])
+@app.route('/confirmar_proveedores/<int:case>', methods=['POST'])
 @login_required
-def confirmar_proveedores():
+def confirmar_proveedores(case=-1):
     # Recopilar datos del formulario
     datos_confirmados = {}
     for material, proveedores in request.form.items():
@@ -247,9 +266,14 @@ def confirmar_proveedores():
 
     # Puedes imprimir o procesar los datos como desees
     print("Datos confirmados:", datos_confirmados)
-    #Obtenemos el case id
-    response = requests.get(f"{base_url}/get_case_id")
-    case_id = response.json()
+    # Usar un valor predeterminado para case si es None
+    if case == -1: 
+        # Obtener el case id
+        response = requests.get(f"{base_url}/get_case_id")
+        case_id = response.json()
+    else:
+        # Utilizar el valor proporcionado para case
+        case_id = case
     response_materials = requests.get(f"{base_url}/getvariablebycase/{int(case_id)}/materials_cants")
     materials = response_materials.json()
     #Casteo de string a json diccionario en python
