@@ -63,6 +63,13 @@ def set_materials():
 def design_collection():
     return render_template('design.html')
 
+@app.route('/charge_order', methods=['GET'])
+@login_required
+@require_role('marketing')
+def update_collection():
+    collections = requests.get(f"{base_url}/get_unset_collections")
+    return render_template('charge_order.html', collections=collections.json())
+
 @app.route('/operators', methods=['GET'])
 @login_required
 @require_role('operator')
@@ -132,6 +139,7 @@ def submit_design():
     # Obtener los datos del formulario
     file = request.files['imagen']
     data = {
+        "nombre": request.form.get('nombre'),
         "categoria": request.form.get('categoria'),
         "caracteristicas": request.form.get('caracteristicas'),
         "modelos": request.form.get('modelos'),
@@ -139,6 +147,7 @@ def submit_design():
         "fecha_lanzamiento": request.form.get('fecha_lanzamiento'),
         "informacion_adicional": request.form.get('informacion_adicional'),
         "file": base64.b64encode(file.read()).decode('utf-8'),
+        "sede": "Ninguna"
     }
     plazo_fabricacion= request.form.get('plazo_fabricacion')
     # Harcodeamos el nombre del pool
@@ -388,6 +397,17 @@ def confirm_plan():
     else:
         return render_template('materials.html')
 
+
+@app.route('/update_collection', methods=['POST'])
+def update_order():
+    collection_id = request.form['collection_id']
+    new_sede = request.form['new_sede']
+    print(collection_id)
+    print(new_sede)
+    # Actualizar en la base de datos (usando pymongo)
+    response = requests.post(f"{base_url}/update_collection/{collection_id}/{new_sede}")
+    print(response)
+    return render_template('charge_order.html', collections=response.json(), message='Sede actualizada correctamente')
 
 if __name__ == '__main__':
     app.run(port=5001, debug=True)
