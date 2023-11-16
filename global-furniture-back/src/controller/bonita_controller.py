@@ -1,3 +1,5 @@
+import json
+from bson import ObjectId
 from flask import Flask, request, jsonify
 from functools import wraps
 import requests
@@ -63,6 +65,8 @@ def get_count_processes():
 @login_required
 def initiate_process(process_id):
     data = request.get_json()
+    print(db)
+    print(db.model)
     db.model.insert_one(data)
     response = Process.initiate_process(process_id)
     return response.json()
@@ -147,6 +151,18 @@ def get_all_pending():
     response = Process.get_all_pending_tasks()
     return jsonify(response)
 
+@app.route('/get_unset_collections', methods=['GET'])
+def get_unset_collections():
+    response = Process.get_unset_collections()
+    return response
+
+
+@app.route('/update_collection/<string:collection_id>/<string:new_sede>', methods=['POST'])
+@login_required
+def update_collection(collection_id, new_sede):
+    response = Process.update_collection(collection_id, new_sede)
+    
+    return response
 
 class Process:
     APItoken =''
@@ -239,7 +255,23 @@ class Process:
     def get_all_pending_tasks():
         response = cookieJar.get(f"{base_url}API/bpm/userTask?c=100")
         return response.json()
-
+    
+    @staticmethod
+    def get_unset_collections():
+        collections = db.model.find({ "sede": "Ninguna" })
+        collections_list = list(collections)
+        collections_json = json.dumps(collections_list, default=str)  # default=str para manejar objetos no serializables
+        print(collections_json)
+        return collections_json
+    
+    @staticmethod
+    def update_collection(collection_id, new_sede):
+        col_id = ObjectId(collection_id)
+        print(type(col_id))
+        db.model.update_one({'_id': col_id}, {'$set': {'sede': new_sede}})
+        collections = Process.get_unset_collections()
+        return collections
+    
     @staticmethod
     def set_variable(task_id, variable, value, tipo):
         task_response = cookieJar.get(f"{base_url}API/bpm/userTask/{task_id}")

@@ -69,6 +69,13 @@ def design_collection():
 def designers():
     return render_template('designer.html')
 
+@app.route('/charge_order', methods=['GET'])
+@login_required
+@require_role('marketing')
+def update_collection():
+    collections = requests.get(f"{base_url}/get_unset_collections")
+    return render_template('charge_order.html', collections=collections.json())
+
 @app.route('/operators', methods=['GET'])
 @login_required
 @require_role('operator')
@@ -96,6 +103,12 @@ def marketing_page():
 def get_variables(case_id):
     response = requests.get(f"{base_url}/get_all_variables/{case_id}")
     return response.json()
+
+@app.route('/confirmar', methods=['GET'])
+@login_required
+@require_role('operator')
+def confirmar():
+    return render_template('reservar_espacios.html')
 
 @app.route('/login', methods=['POST'])
 def submit_login():
@@ -137,6 +150,7 @@ def submit_design():
     # Obtener los datos del formulario
     file = request.files['imagen']
     data = {
+        "nombre": request.form.get('nombre'),
         "categoria": request.form.get('categoria'),
         "caracteristicas": request.form.get('caracteristicas'),
         "modelos": request.form.get('modelos'),
@@ -144,6 +158,7 @@ def submit_design():
         "fecha_lanzamiento": request.form.get('fecha_lanzamiento'),
         "informacion_adicional": request.form.get('informacion_adicional'),
         "file": base64.b64encode(file.read()).decode('utf-8'),
+        "sede": "Ninguna"
     }
     plazo_fabricacion= request.form.get('plazo_fabricacion')
     # Harcodeamos el nombre del pool
@@ -190,7 +205,7 @@ def submit_materials(case=-1):
         "materiales": materiales_dict,
         "fecha_lanzamiento": request.form.get('fecha_lanzamiento')
     }
-
+    print(materiales_dict)
     #Seteo de variables de proceso los materiales y cantidades como si fuera un dump de json
     materials_json = json.dumps(data["materiales"])
 
@@ -261,9 +276,13 @@ def submit_materials(case=-1):
 def confirmar_proveedores(case=-1):
     # Recopilar datos del formulario
     datos_confirmados = {}
+    fechaMax = "2000-01-01"
     for material, proveedores in request.form.items():
-        datos_confirmados[material] = proveedores
+        if (proveedores.split(",")[1] > fechaMax):
+            fechaMax = proveedores.split(",")[1]
+        datos_confirmados[material] = proveedores # nombre,fecha
 
+    print(fechaMax)
     # Puedes imprimir o procesar los datos como desees
     print("Datos confirmados:", datos_confirmados)
     # Usar un valor predeterminado para case si es None
@@ -275,6 +294,7 @@ def confirmar_proveedores(case=-1):
         # Utilizar el valor proporcionado para case
         case_id = case
     response_materials = requests.get(f"{base_url}/getvariablebycase/{int(case_id)}/materials_cants")
+    response = requests.put(f"{base_url}/setvariablebycase/{int(case_id)}/fecha_entrega/{fechaMax}/java.lang.String")
     materials = response_materials.json()
     #Casteo de string a json diccionario en python
     materials_data = json.loads(materials['materials_cants'])
@@ -284,7 +304,8 @@ def confirmar_proveedores(case=-1):
                 consulta = {
                     f"material_{key[-1]}": material,
                     f"cantidad_{key[-1]}": materials_data[f"cantidad_{key[-1]}"],
-                    f"name_{key[-1]}": prov
+                    f"name_{key[-1]}": prov.split(",")[0],
+                    f"fecha_{key[-1]}": prov.split(",")[1]
                 }
                 consulta_json = json.dumps(consulta)
                 response = requests.put(f"{base_url}/setvariablebycase/{int(case_id)}/reserva_material_{key[-1]}/{consulta_json}/java.lang.String")
@@ -296,6 +317,10 @@ def confirmar_proveedores(case=-1):
     task_id = response1.json()[0]['id']
     print(task_id)
     if response1.status_code == 200:
+        response2 = requests.get(f"{base_url}/get_user_by_username/antonio.operator")
+        user_id = response2.json()[0]['id']
+        # Asignar la tarea al usuario
+        requests.put(f"{base_url}/assigntask/{str(task_id)}/{str(user_id)}")
         # Completar la tarea para avanzar el flujo
         response2 = requests.post(f"{base_url}/completeactivity/{task_id}")
         print(response2)
@@ -309,9 +334,12 @@ def confirmar_proveedores(case=-1):
                 tasks_data = response_tasks.json()
                 # Busca en las tareas a ver si la tarea de reserva de materiales está pendiente o la de establecer para 
                 # ver cual mostrar en el front
+                print(tasks_data)
                 if any(task for task in tasks_data if task["name"] == "Reservar espacios de fabricacion para la coleccion" and task["state"] == "ready"):
                     print('entra')
                     #Obtengo la respuesta de la api que se almaceno como var de proceso en bonita
+                    
+                    ##ACA ESTA EL BARDO, CREO Q NO SE ESTA ALMACENANDO EN LA API E BONITA :(
                     response_espacios = requests.get(f"{base_url}/getvariablebycase/{int(case_id)}/espacios")
                     print(response_espacios)
                     espacios = response_espacios.json()
@@ -321,6 +349,89 @@ def confirmar_proveedores(case=-1):
                     print(espacios_data)
                     return render_template('reserva_espacios.html',espacios=espacios_data)
 
+
+@app.route("/confirmar_espacio", methods=["POST"])
+@require_role('operator')
+@login_required
+def confirmar_espacio():
+    espacio_seleccionado = request.form.get('espacio')
+    print(espacio_seleccionado)
+    #Obtenemos el case id
+    response = requests.get(f"{base_url}/get_case_id")
+    case_id = response.json()
+    response = requests.put(f"{base_url}/setvariablebycase/{int(case_id)}/espacio_seleccionado/{espacio_seleccionado}/java.lang.String")
+    # Buscar la tarea actual por case_id
+    response1 = requests.get(f"{base_url}/searchactivitybycase/{case_id}/Reservar-espacios-de-fabricacion-para-la-coleccion")
+    task_id = response1.json()[0]['id']
+    if response1.status_code == 200:
+        response2 = requests.get(f"{base_url}/get_user_by_username/antonio.operator")
+        user_id = response2.json()[0]['id']
+        # Asignar la tarea al usuario
+        requests.put(f"{base_url}/assigntask/{str(task_id)}/{str(user_id)}")
+        # Completar la tarea para avanzar el flujo
+        response2 = requests.post(f"{base_url}/completeactivity/{task_id}")
+        print(response2)
+        if response2.status_code == 200:
+            time.sleep(7)
+            response_tasks = requests.get(f"{base_url}/get_pending_tasks/{int(case_id)}")
+            if response_tasks.status_code == 200:
+                tasks_data = response_tasks.json()
+                # Busca en las tareas a ver si la tarea de reserva de materiales está pendiente o la de establecer para 
+                # ver cual mostrar en el front
+                if any(task for task in tasks_data if task["name"] == "Confirmar Plan de Fabricacion" and task["state"] == "ready"):
+                    print('entra')
+                    #Obtengo la respuesta de la api que se almaceno como var de proceso en bonita
+                    espacio = requests.get(f"{base_url}/getvariablebycase/{int(case_id)}/espacio_seleccionado")
+                    espacio = espacio.json()['espacio_seleccionado']
+                    fecha_entrega = requests.get(f"{base_url}/getvariablebycase/{int(case_id)}/fecha_entrega")
+                    fecha_entrega = fecha_entrega.json()['fecha_entrega']
+                    lanzamiento = requests.get(f"{base_url}/getvariablebycase/{int(case_id)}/fecha_lanzamiento")
+                    lanzamiento = lanzamiento.json()['fecha_lanzamiento']
+                    materiales = []
+                    for i in range(1, 5):
+                        material = requests.get(f"{base_url}/getvariablebycase/{int(case_id)}/reserva_material_{i}")
+                        material = material.json()[f"reserva_material_{i}"]
+                        if material[f"cantidad_{i}"] > 0:
+                            materiales.append(material[f"material_{i}"] + " : " + str(material[f"cantidad_{i}"]) + " unidades para la fecha " + material[f"fecha_{i}"])
+                    print(materiales)
+                    print(espacio)
+                    print(fecha_entrega)
+                    print(lanzamiento)
+                    return render_template('confirmation.html',espacio=espacio,fecha_entrega=fecha_entrega,lanzamiento=lanzamiento,materiales=materiales)
+
+
+@app.route('/confirm_plan', methods=['POST'])
+@require_role('operator')
+@login_required
+def confirm_plan():
+    confirmo = request.form.get('confirmo')
+    response = requests.get(f"{base_url}/get_case_id")
+    case_id = response.json()
+    response = requests.put(f"{base_url}/setvariablebycase/{int(case_id)}/confirmo/{confirmo}/java.lang.Boolean")
+    response1 = requests.get(f"{base_url}/searchactivitybycase/{case_id}/Confirmar-Plan-de-Fabricacion")
+    task_id = response1.json()[0]['id']
+    response2 = requests.get(f"{base_url}/get_user_by_username/antonio.operator")
+    user_id = response2.json()[0]['id']
+    requests.put(f"{base_url}/assigntask/{str(task_id)}/{str(user_id)}")
+    response2 = requests.post(f"{base_url}/completeactivity/{task_id}")
+    time.sleep(7)
+    if confirmo == 'true':
+        #Retornar a index de operadores MODIFICAR
+        return {"message": "Plan de fabricacion confirmado exitosamente!"}
+    else:
+        return render_template('materials.html')
+
+
+@app.route('/update_collection', methods=['POST'])
+def update_order():
+    collection_id = request.form['collection_id']
+    new_sede = request.form['new_sede']
+    print(collection_id)
+    print(new_sede)
+    # Actualizar en la base de datos (usando pymongo)
+    response = requests.post(f"{base_url}/update_collection/{collection_id}/{new_sede}")
+    print(response)
+    return render_template('charge_order.html', collections=response.json(), message='Sede actualizada correctamente')
 
 if __name__ == '__main__':
     app.run(port=5001, debug=True)

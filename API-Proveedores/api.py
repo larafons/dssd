@@ -5,6 +5,7 @@ import secrets
 from functools import wraps
 import requests
 from flask_restx import Api, Resource, fields
+import time
 
 authorizations = {
     'Bearer Auth': {
@@ -52,6 +53,8 @@ datos = {
         {"name": "Proveedor5", "cantidad": 500, "fecha": "2023-12-05"},
     ],
 }
+
+hitos = ["Ya estan disponibles todos los materiales solicitados", "A partir de hoy esta disponible el espacio de fabricacion", "Todos los materiales fueron enviados a la fabrica", "Inicio el proceso de ensamblado", "Finalizo la etapa de fabricacion: coleccion terminada"]
 
 # la reserva de espacios tiene 2 elementos, fecha de inicio y fecha de fin
 reservas = {
@@ -121,11 +124,53 @@ model_material_busqueda = api.model('MaterialBusqueda', {
 })
 
 cancelar_model = api.model('Cancelar', {
-    'material': fields.String(required=True, description='Tipo de material (algodon, metal, madera o poliester)'),
-    'name': fields.String(required=True, description='Nombre del proveedor'),
-    'cantidad': fields.Integer(required=True, description='Cantidad a cancelar'),
-    'fecha': fields.String(required=True, description='Fecha de cancelación'),
+    'materiales_cancelar': fields.Nested(api.model('Materiales_cancelar', {
+        'material_1': fields.String(description='Tipo de material 1'),
+        'cantidad_1': fields.Integer(description='Cantidad de material 1'),
+        'name_1': fields.String(description='Nombre del proveedor 1'),
+        'fecha_1': fields.String(required=True, description='Fecha de cancelacion 1'),
+        'material_2': fields.String(description='Tipo de material 2'),
+        'cantidad_2': fields.Integer(description='Cantidad de material 2'),
+        'name_2': fields.String(description='Nombre del proveedor 2'),
+        'fecha_2': fields.String(required=True, description='Fecha de cancelacion 2'),
+        'material_3': fields.String(description='Tipo de material 3'),
+        'cantidad_3': fields.Integer(description='Cantidad de material 3'),
+        'name_3': fields.String(description='Nombre del proveedor 3'),
+        'fecha_3': fields.String(required=True, description='Fecha de cancelacion 3'),
+        'material_4': fields.String(description='Tipo de material 4'),
+        'cantidad_4': fields.Integer(description='Cantidad de material 4'),
+        'name_4': fields.String(description='Nombre del proveedor 4'),
+        'fecha_4': fields.String(required=True, description='Fecha de cancelacion 4'),
+    })),
+    'espacio': fields.String(required=True, description='Nombre del espacio a cancelar'),
+    'fecha_espacio': fields.String(required=True, description='Fecha del espacio a cancelar')
 })
+
+
+def cancelar_espacio(espacio, fecha_inicio):
+    reservas = reservas_espacios[espacio]
+    if reservas:
+        for reserva in reservas:
+            #como no existen dos reservas en las mismas fechas, (no pueden
+            # existir dos con la misma fecha de inicio) solo filtramos por eso.
+            if reserva['fecha_inicio'] == fecha_inicio:
+                reservas.remove(reserva)
+                return True
+    return False
+
+def cancelar_material(material, proveedor, cantidad_cancelada, fecha_cancelar):
+    formatted_date = parse_and_format_date(fecha_cancelar)
+    if not formatted_date:
+        return {"message": "Formato de fecha inválido. Por favor, use el formato 'año-mes-día'."}, 400
+    for reserva in reservas[material]:
+        if (reserva["name"] == proveedor and reserva["cantidad"] == cantidad_cancelada and reserva["fecha_reserva"] == formatted_date):
+            for x in datos[material]:
+                if (x["name"] == proveedor):
+                    x["cantidad"] += cantidad_cancelada
+            reservas[material].remove(reserva)
+            return True
+    return False
+
 
 @ns.route('/login')
 class LoginResource(Resource):
@@ -178,6 +223,17 @@ def parse_and_format_date(date_string):
         # Si hay un error, retorna None
         return None
 
+
+@ns.route('/get_reservas')
+class GetResource(Resource):
+    @ns.response(200, 'Búsqueda exitosa')
+    @ns.response(400, 'Formato de fecha inválido')
+    @ns.response(401, 'Token inválido, expirado o no proporcionado')
+    def get(self):
+        res = { "reservas_materiales": reservas,
+                "reservas_espacios": reservas_espacios}
+        return res
+    
 #Recurso para buscar proveedores
 @ns.route('/buscar')
 class BuscarResource(Resource):
@@ -200,7 +256,6 @@ class BuscarResource(Resource):
         mats = [v.strip() for k, v in materiales.items() if "material_" in k]
         cants = [v for k, v in materiales.items() if "cantidad_" in k]
         material_cant_list = [(mat, cant) for mat, cant in zip(mats, cants) if mat]
-
 
         results = {}
         for material, cant in material_cant_list:
@@ -259,7 +314,6 @@ class ReservarResource(Resource):
                         "cantidad": cantidad_reserva, 
                         "fecha_reserva": fecha_reserva
                     })
-        print(reservas)
         return {"status": "Reserva realizada con éxito"}, 200
 
 
@@ -273,24 +327,27 @@ class CancelarResource(Resource):
     @ns.response(401, 'Token inválido, expirado o no proporcionado')
     @ns.response(404, 'No se pudo cancelar: reserva inexistente.')
     def post(self):
-        data = request.json
-        material = data["material"]
-        proveedor = data["name"]
-        cantidad_cancelada = data["cantidad"]
-        fecha_cancelar = data["fecha"]
-        formatted_date = parse_and_format_date(fecha_cancelar)
-        print(formatted_date)
-        if not formatted_date:
-            return {"message": "Formato de fecha inválido. Por favor, use el formato 'año-mes-día'."}, 400
-        for reserva in reservas[material]:
-            print(reservas)
-            if (reserva["name"] == proveedor and reserva["cantidad"] == cantidad_cancelada and reserva["fecha_reserva"] == formatted_date):
-                for x in datos[material]:
-                    if (x["name"] == proveedor):
-                        x["cantidad"] += cantidad_cancelada
-                reservas[material].remove(reserva)
-                return {"status": "Reserva cancelada con éxito"}
-        return {"status": "No se pudo cancelar: reserva inexistente."}, 404
+        data = request.get_json()
+        materiales = data.get("materiales_cancelar")
+        espacio = data.get("espacio")
+        fecha = data.get("fecha_espacio")
+        cancelar = cancelar_espacio(espacio, fecha)
+        if cancelar:
+            for i in range(1, 5):
+                material = materiales.get(f'material_{i}')
+                cantidad = materiales.get(f'cantidad_{i}')
+                name = materiales.get(f'name_{i}')
+                fecha = materiales.get(f'fecha_{i}')
+
+                if material and cantidad and name and fecha:
+                    if cantidad != 0 and name != '':
+                        ok = cancelar_material(material, name, cantidad, fecha)
+                        if not ok:
+                            return {"status": "No se pudo cancelar: material inexistente."}, 404
+            return {'message': 'Cancelacion exitosa'}, 200
+        else:
+            return {'message': 'no se pudo cancelar: reserva inexistente.'}, 404
+
 
 # PROBAR    
 @ns.route('/consultar_espacios')
@@ -330,14 +387,13 @@ class ConsultarEspaciosResource(Resource):
 
             if disponible:
                 espacios_disponibles.append(espacio)
-            print(espacios_disponibles)
         return {"message": "Búsqueda exitosa", "result": espacios_disponibles}, 200
 
 @ns.route('/reservar_espacio')
 class ConsultarEspaciosResource(Resource):
-    # @ns.doc(security='Bearer Auth')
+    @ns.doc(security='Bearer Auth')
     @ns.expect(reserva_espacio_model)
-    # @verify_token
+    @verify_token
     @ns.response(200, 'Reserva exitosa')
     @ns.response(400, 'Consulta invalida')
     @ns.response(401, 'Token inválido, expirado o no proporcionado')
@@ -346,7 +402,6 @@ class ConsultarEspaciosResource(Resource):
         fecha_inicio = data.get("fecha_inicio")
         cant_dias = data.get("cant_dias")
         nombre_espacio = data.get("espacio")
-        print(reservas_espacios["espacio_3"])
         # Verificar si las respuestas fueron exitosas
         if not fecha_inicio or cant_dias <= 0 or nombre_espacio not in reservas_espacios.keys():
             return {"message": "Consulta invalida"}, 400
@@ -357,9 +412,35 @@ class ConsultarEspaciosResource(Resource):
         fecha_fin = fecha_fin.strftime("%Y-%m-%d")
         # Agregarlo a espacios disponibles        
         reservas_espacios[nombre_espacio].append({"fecha_inicio": fecha_inicio, "fecha_fin": fecha_fin})
-        print(reservas_espacios)
         return {"message": "reserva exitosa"}, 200
 
+@ns.route('/consultar_hitos')
+class ConsultarHitosResource(Resource):
+    @ns.doc(security='Bearer Auth')
+    @verify_token
+    @ns.response(200, 'Hito retornado')
+    @ns.response(401, 'Token inválido, expirado o no proporcionado')
+    def get(self):
+        time.sleep(1)
+        if hitos:
+            #Change and put the pop in a json where the key es "message"
+            return {"mensaje": f"{hitos.pop(0)}"}, 200
+        else:
+            return {"mensaje": "Finalizo la etapa de fabricacion: coleccion terminada"}, 200
+
+@ns.route('/consultar_fin')
+class ConsultarFinResource(Resource):
+    @ns.doc(security='Bearer Auth')
+    @verify_token
+    @ns.response(200, 'Coleccion finalizada')
+    @ns.response(401, 'Token inválido, expirado o no proporcionado')
+    @ns.response(402, 'Coleccion en desarrollo')
+    def get(self):
+        time.sleep(1)
+        if hitos:
+            return {"mensaje": "Coleccion en desarrollo"}, 402
+        else:
+            return {"mensaje": "Coleccion finalizada"}, 200
 
 
 if __name__ == "__main__":
