@@ -20,7 +20,7 @@
     <div id="promedioDias"></div>
 
     <h2>Porcentaje de colecciones finalizadas</h2>
-    <div id="promedioDias"></div>
+    <div id="porcentaje"></div>
 
     <script>
         // Convertir los datos de Flask a un formato que JavaScript pueda usar
@@ -57,6 +57,10 @@
         // Mostrar el promedio de días de fabricación
         const promedioDias = '{{ promedio }}';
         document.getElementById('promedioDias').textContent = `Promedio: ${promedioDias} días`;
+
+        // Mostrar el porcentaje de colecciones finalizadas
+        const porcentajeFinalizadas = '{{ porcentaje | round(2) }}';
+        document.getElementById('porcentaje').textContent = `Porcentaje: ${porcentajeFinalizadas}%`;
     </script>
 </body>
 </html>

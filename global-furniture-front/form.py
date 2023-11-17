@@ -430,8 +430,8 @@ def update_order():
 
 
 @app.route('/indicators', methods=["GET"])
-@login_required
-@require_role('marketing')
+#@login_required
+#@require_role('marketing')
 def get_indicators():
     collections_sedes = requests.get(f"{base_url}/get_all_sedes")
     datos = list(collections_sedes.json())
@@ -447,8 +447,15 @@ def get_indicators():
     prom_dias_fabrication = requests.get(f"{base_url}/get_prom_dias")
     
     result = requests.get(f"{base_url}/get_finished")
-    print(result.json())
-    return render_template('indicators.html', datos = conteo, promedio = prom_dias_fabrication.json(), porcentaje = result.json())
+    result = result.json()
+    total_tareas = result['finalizadas'] + result['pendientes']
+
+    # Calcula el porcentaje de tareas finalizadas
+    if total_tareas > 0:
+        porcentaje_finalizadas = (result['finalizadas'] / total_tareas) * 100
+    else:
+        porcentaje_finalizadas = 0
+    return render_template('indicators.html', datos = conteo, promedio = prom_dias_fabrication.json(), porcentaje = porcentaje_finalizadas)
 
 
 if __name__ == '__main__':
