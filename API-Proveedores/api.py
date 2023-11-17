@@ -226,6 +226,8 @@ def parse_and_format_date(date_string):
 
 @ns.route('/get_reservas')
 class GetResource(Resource):
+    @ns.doc(security='Bearer Auth')
+    @verify_token
     @ns.response(200, 'Búsqueda exitosa')
     @ns.response(400, 'Formato de fecha inválido')
     @ns.response(401, 'Token inválido, expirado o no proporcionado')

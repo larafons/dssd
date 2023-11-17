@@ -87,6 +87,7 @@ def set_variable(task_id, variable, value, tipo):
 @login_required
 def set_variable_by_case(case_id, variable, value, tipo):
     response = Process.set_variable_by_case(case_id, variable, value, tipo)
+    print(response.status_code)
     return str(response.status_code)
 
 @app.route('/assigntask/<string:task_id>/<string:user_id>', methods=['PUT'])
