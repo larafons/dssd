@@ -6,6 +6,7 @@ import time
 import requests
 import base64
 import json
+import matplotlib.pyplot as plt
 
 app = Flask(__name__)
 base_url = "http://localhost:5000" 
@@ -418,15 +419,37 @@ def confirm_plan(case=-1):
 
 
 @app.route('/update_collection', methods=['POST'])
+@login_required
+@require_role('marketing')
 def update_order():
     collection_id = request.form['collection_id']
     new_sede = request.form['new_sede']
-    print(collection_id)
-    print(new_sede)
     # Actualizar en la base de datos (usando pymongo)
     response = requests.post(f"{base_url}/update_collection/{collection_id}/{new_sede}")
-    print(response)
     return render_template('charge_order.html', collections=response.json(), message='Sede actualizada correctamente')
+
+
+@app.route('/indicators', methods=["GET"])
+@login_required
+@require_role('marketing')
+def get_indicators():
+    collections_sedes = requests.get(f"{base_url}/get_all_sedes")
+    datos = list(collections_sedes.json())
+    # Contabilizar las ocurrencias
+    conteo = {}
+    for item in datos:
+        sede = item['sede']
+        if sede in conteo:
+            conteo[sede] += 1
+        else:
+            conteo[sede] = 1
+
+    prom_dias_fabrication = requests.get(f"{base_url}/get_prom_dias")
+    
+    result = requests.get(f"{base_url}/get_finished")
+    print(result.json())
+    return render_template('indicators.html', datos = conteo, promedio = prom_dias_fabrication.json(), porcentaje = result.json())
+
 
 if __name__ == '__main__':
     app.run(port=5001, debug=True)

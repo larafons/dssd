@@ -56,7 +56,7 @@ datos = {
 
 hitos = ["Ya estan disponibles todos los materiales solicitados", "A partir de hoy esta disponible el espacio de fabricacion", "Todos los materiales fueron enviados a la fabrica", "Inicio el proceso de ensamblado", "Finalizo la etapa de fabricacion: coleccion terminada"]
 
-# la reserva de espacios tiene 2 elementos, fecha de inicio y fecha de fin
+
 reservas = {
     "algodon": [],
     "metal": [],
@@ -226,8 +226,6 @@ def parse_and_format_date(date_string):
 
 @ns.route('/get_reservas')
 class GetResource(Resource):
-    @ns.doc(security='Bearer Auth')
-    @verify_token
     @ns.response(200, 'Búsqueda exitosa')
     @ns.response(400, 'Formato de fecha inválido')
     @ns.response(401, 'Token inválido, expirado o no proporcionado')
@@ -423,7 +421,7 @@ class ConsultarHitosResource(Resource):
     @ns.response(200, 'Hito retornado')
     @ns.response(401, 'Token inválido, expirado o no proporcionado')
     def get(self):
-        time.sleep(2)
+        time.sleep(1)
         if hitos:
             #Change and put the pop in a json where the key es "message"
             return {"mensaje": f"{hitos.pop(0)}"}, 200
@@ -442,7 +440,6 @@ class ConsultarFinResource(Resource):
         if hitos:
             return {"mensaje": "Coleccion en desarrollo"}, 402
         else:
-            hitos = ["Ya estan disponibles todos los materiales solicitados", "A partir de hoy esta disponible el espacio de fabricacion", "Todos los materiales fueron enviados a la fabrica", "Inicio el proceso de ensamblado", "Finalizo la etapa de fabricacion: coleccion terminada"]
             return {"mensaje": "Coleccion finalizada"}, 200
 
 
