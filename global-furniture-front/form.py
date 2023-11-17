@@ -430,8 +430,8 @@ def update_order():
 
 
 @app.route('/indicators', methods=["GET"])
-#@login_required
-#@require_role('marketing')
+@login_required
+@require_role('marketing')
 def get_indicators():
     collections_sedes = requests.get(f"{base_url}/get_all_sedes")
     datos = list(collections_sedes.json())
