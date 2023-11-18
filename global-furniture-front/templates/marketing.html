@@ -37,10 +37,39 @@
         .form-group input[type="submit"]:hover {
             background-color: #333;
         }
+        button{
+            background-color: #000;
+            color: #fff;
+            font-size: 18px;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 4px;
+        }
+        .container2 {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1 class="text-center">Seleccione la coleccion marketing</h1>
-        
+    <div>
+        <h1 class="text-center" style="margin-top: 2%;">Marketing</h1>
+        <div class="container2">
+            <button onclick="cargar()">Cargar ordenes de distribucion</button>
+            <br>
+            <button onclick="asociar()">Asociar lotes con sedes</button>
+        </div>
 </html>
+
+<script>
+    function cargar() {
+        window.location.href = `/charge_order`;
+    }
+
+    function asociar(){
+        window.location.href = `/sedes`;
+    }
+</script>

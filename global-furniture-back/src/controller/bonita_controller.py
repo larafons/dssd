@@ -4,6 +4,7 @@ from flask import Flask, request, jsonify
 from functools import wraps
 import requests
 from pymongo import MongoClient
+import pymongo
 
 app = Flask(__name__)
 base_url= "http://localhost:8080/bonita/"
@@ -65,10 +66,9 @@ def get_count_processes():
 @login_required
 def initiate_process(process_id):
     data = request.get_json()
-    print(db)
-    print(db.model)
-    db.model.insert_one(data)
+    id= db.model.insert_one(data)
     response = Process.initiate_process(process_id)
+    db.model.update_one({'_id': id.inserted_id}, {'$set': {'case_id': response.json()['caseId']}})
     return response.json()
 
 @app.route('/get_pending_tasks/<int:case_id>', methods=['GET'])
@@ -146,6 +146,10 @@ def get_material(material, fecha, cantidad):
 def get_case_id():
     return Process.get_case_id()
 
+@app.route('/get_case_id_from_mongo/<string:id>', methods=['GET'])
+def get_case_id_from_mongo(id):
+    return Process.get_case_id_from_mongo(id)
+
 @app.route('/get_all_pending_tasks', methods=['GET'])
 def get_all_pending():
     response = Process.get_all_pending_tasks()
@@ -156,12 +160,21 @@ def get_unset_collections():
     response = Process.get_unset_collections()
     return response
 
+@app.route('/get_set_collections', methods=['GET'])
+def get_set_collections():
+    response = Process.get_set_collections()
+    return response
 
-@app.route('/update_collection/<string:collection_id>/<string:new_sede>', methods=['POST'])
+@app.route('/update_collection/<int:collection_id>/<string:new_sede>', methods=['POST'])
 @login_required
 def update_collection(collection_id, new_sede):
     response = Process.update_collection(collection_id, new_sede)
-    
+    return response
+
+@app.route('/send_collection/<int:case>', methods=['POST'])
+@login_required
+def send_collection(case):
+    response = Process.send_collection(case)
     return response
 
 class Process:
@@ -261,14 +274,22 @@ class Process:
         collections = db.model.find({ "sede": "Ninguna" })
         collections_list = list(collections)
         collections_json = json.dumps(collections_list, default=str)  # default=str para manejar objetos no serializables
-        print(collections_json)
+        return collections_json
+    
+    @staticmethod
+    def get_set_collections():
+        collections = db.model.find({
+            "sede": {"$ne": "Ninguna"},
+            "finalizada": False
+        })
+        collections_list = list(collections)
+        collections_json = json.dumps(collections_list, default=str)
         return collections_json
     
     @staticmethod
     def update_collection(collection_id, new_sede):
-        col_id = ObjectId(collection_id)
-        print(type(col_id))
-        db.model.update_one({'_id': col_id}, {'$set': {'sede': new_sede}})
+        print("id: "+str(collection_id))
+        db.model.update_one({'case_id': int(collection_id)}, {'$set': {'sede': new_sede}})
         collections = Process.get_unset_collections()
         return collections
     
@@ -346,6 +367,11 @@ class Process:
         request = cookieJar.get(f"{base_url}API/bpm/case?f=name=entrega-1")
         process = request.json()[0]
         return process["rootCaseId"]
+    
+    @staticmethod
+    def send_collection(case):
+        db.model.update_one({'case_id': int(case)}, {'$set': {'finalizada': True}})
+        return True
     
     @staticmethod
     def get_material(material, fecha, cantidad):

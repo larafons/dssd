@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Asociar lotes con sede</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        .container {
+            margin-top: 50px;
+            border: 2px solid #000;
+            padding: 20px;
+            border-radius: 10px;
+        }
+        .form-group label {
+            font-weight: bold;
+        }
+        .form-group input[type="text"],
+        .form-group input[type="date"],
+        .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #000;
+            border-radius: 5px;
+        }
+        .form-group input[type="submit"] {
+            background-color: #000;
+            color: #fff;
+            font-size: 18px;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .form-group input[type="submit"]:hover {
+            background-color: #333;
+        }
+        h1{
+            align-content: center;
+        }
+        button{
+            background-color: #000;
+            color: #fff;
+            font-size: 18px;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-left: 6px;
+        }
+        .container2 {
+            display: flex;
+            align-items: center;
+        }
+    </style>
+</head>
+<body>
+    <h1>Asociar lotes con sede</h1>
+    
+
+    <h3>Colecciones listas</h3>
+    {% if set %}
+    <ul>
+        {% for coleccion in set %}
+        <li>
+            <div class="form-group container2">
+                <p style="margin-right: 5px;">La colección {{coleccion.case_id}} se encuentra finalizada</p>
+                <form method="POST" action="/enviar_lote/{{coleccion.case_id}}">
+                    <input type="submit" class="btn btn-primary" value="Enviar">
+                </form>
+            </div>
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <h5 style="margin-left: 2%;">No hay colecciones listas</h5>
+{% endif %}
+
+    <h3>Colecciones en proceso de carga de ordenes de distribución</h3>
+    <ul>
+        {% for coleccionu in unset %}
+        <li>
+            <div class="form-group">
+                <p>Faltan cargar las ordenes de distribución de {{coleccionu.case_id}}</p>
+            </div>
+        </li>
+    {% endfor %}
+    </ul>
+    <button onclick="cargar()" style="margin-left: 3%;">Cargar ordenes de distribución</button>
+
+    <script>
+        function cargar() {
+                window.location.href = `/charge_order`;
+            }
+    </script>
+
+</body>
+<script>
+
+</script>
+</html>

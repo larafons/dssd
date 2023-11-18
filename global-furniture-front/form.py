@@ -105,6 +105,14 @@ def get_variables(case_id):
 def confirmar():
     return render_template('reservar_espacios.html')
 
+@app.route('/sedes', methods=['GET'])
+@login_required
+@require_role('marketing')
+def sedes():
+    unset = requests.get(f"{base_url}/get_unset_collections")
+    set= requests.get(f"{base_url}/get_set_collections")
+    return render_template('coleccion_sede.html', unset= unset.json(), set=set.json())
+
 @app.route('/login', methods=['POST'])
 def submit_login():
     username = request.form.get('username')
@@ -153,7 +161,9 @@ def submit_design():
         "fecha_lanzamiento": request.form.get('fecha_lanzamiento'),
         "informacion_adicional": request.form.get('informacion_adicional'),
         "file": base64.b64encode(file.read()).decode('utf-8'),
-        "sede": "Ninguna"
+        "sede": "Ninguna",
+        "finalizada": False,
+        "case_id": 101,
     }
     plazo_fabricacion= request.form.get('plazo_fabricacion')
     # Harcodeamos el nombre del pool
@@ -433,12 +443,52 @@ def confirm_plan(case=-1):
 def update_order():
     collection_id = request.form['collection_id']
     new_sede = request.form['new_sede']
-    print(collection_id)
-    print(new_sede)
     # Actualizar en la base de datos (usando pymongo)
     response = requests.post(f"{base_url}/update_collection/{collection_id}/{new_sede}")
     print(response)
-    return render_template('charge_order.html', collections=response.json(), message='Sede actualizada correctamente')
+    response2 = requests.get(f"{base_url}/searchactivitybycase/{collection_id}/Cargar-ordenes-de-distribucion")
+    task_id = response2.json()[0]['id']
+    print(task_id)
+    #Buscar usuario generico
+    response3 = requests.get(f"{base_url}/get_user_by_username/daniela.marketing")
+    user_id = response3.json()[0]['id']
+    print(user_id)
+    #Asignar la tarea al usuario
+    response4 = requests.put(f"{base_url}/assigntask/{str(task_id)}/{str(user_id)}")
+    if response4.status_code == 200:
+        #Completar la tarea
+        response5 = requests.post(f"{base_url}/completeactivity/{task_id}")
+        if response5.status_code == 200:
+            return render_template('charge_order.html', collections=response.json(), message='Sede actualizada correctamente')
+
+@app.route('/enviar_lote/<int:case>', methods=['POST'])
+def enviar_lote(case=-1):
+    if case == -1: 
+        # Obtener el case id
+        response = requests.get(f"{base_url}/get_case_id")
+        case_id = response.json()
+    else:
+        # Utilizar el valor proporcionado para case
+        case_id = case
+    # Actualizar en la base de datos (usando pymongo)
+    response = requests.post(f"{base_url}/send_collection/{case}")
+    print(response)
+    response2 = requests.get(f"{base_url}/searchactivitybycase/{case}/Asociar-lotes-con-sede")
+    task_id = response2.json()[0]['id']
+    print(task_id)
+    #Buscar usuario generico
+    response3 = requests.get(f"{base_url}/get_user_by_username/daniela.marketing")
+    user_id = response3.json()[0]['id']
+    print(user_id)
+    #Asignar la tarea al usuario
+    response4 = requests.put(f"{base_url}/assigntask/{str(task_id)}/{str(user_id)}")
+    if response4.status_code == 200:
+        #Completar la tarea
+        response5 = requests.post(f"{base_url}/completeactivity/{task_id}")
+        if response5.status_code == 200:
+            unset = requests.get(f"{base_url}/get_unset_collections")
+            set= requests.get(f"{base_url}/get_set_collections")
+            return render_template('coleccion_sede.html', unset= unset.json(), set=set.json())
 
 if __name__ == '__main__':
     app.run(port=5001, debug=True)
