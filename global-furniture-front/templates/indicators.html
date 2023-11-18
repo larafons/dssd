@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Indicadores</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        #graficoSedes {
+            max-width: 400px; /* Ajusta este valor según tus necesidades */
+            max-height: 400px; /* Ajusta este valor según tus necesidades */
+            margin: auto;
+        }
+    </style>
+</head>
+<body>
+    <h2>Sedes más demandadas en envío de colecciones</h2>
+    <canvas id="graficoSedes"></canvas>
+
+    <h2>Promedio de plazos de fabricación</h2>
+    <div id="promedioDias"></div>
+
+    <h2>Porcentaje de colecciones finalizadas</h2>
+    <div id="porcentaje"></div>
+
+    <script>
+        // Convertir los datos de Flask a un formato que JavaScript pueda usar
+        const datosSedes = JSON.parse('{{ datos | tojson | safe }}');
+        const nombresSedes = Object.keys(datosSedes);
+        const ocurrenciasSedes = Object.values(datosSedes);
+
+        // Colores para el gráfico (ajusta según necesidad)
+        const colores = [
+            'rgba(255, 99, 132, 0.2)',
+            'rgba(54, 162, 235, 0.2)',
+            'rgba(255, 206, 86, 0.2)',
+            'rgba(75, 192, 192, 0.2)',
+            'rgba(153, 102, 255, 0.2)'
+        ];
+
+        // Crear el gráfico de sedes
+        const ctxSedes = document.getElementById('graficoSedes').getContext('2d');
+        const graficoSedes = new Chart(ctxSedes, {
+            type: 'pie',
+            data: {
+                labels: nombresSedes,
+                datasets: [{
+                    data: ocurrenciasSedes,
+                    responsive: true,
+                    maintainAspectRatio: false, 
+                    backgroundColor: colores.slice(0, nombresSedes.length),
+                    borderColor: colores.map(color => color.replace('0.2', '1')),
+                    borderWidth: 1
+                }]
+            }
+        });
+
+        // Mostrar el promedio de días de fabricación
+        const promedioDias = '{{ promedio }}';
+        document.getElementById('promedioDias').textContent = `Promedio: ${promedioDias} días`;
+
+        // Mostrar el porcentaje de colecciones finalizadas
+        const porcentajeFinalizadas = '{{ porcentaje | round(2) }}';
+        document.getElementById('porcentaje').textContent = `Porcentaje: ${porcentajeFinalizadas}%`;
+    </script>
+</body>
+</html>

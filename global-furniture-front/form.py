@@ -6,6 +6,7 @@ import time
 import requests
 import base64
 import json
+import matplotlib.pyplot as plt
 
 app = Flask(__name__)
 base_url = "http://localhost:5000" 
@@ -99,11 +100,6 @@ def get_variables(case_id):
     response = requests.get(f"{base_url}/get_all_variables/{case_id}")
     return response.json()
 
-@app.route('/confirmar', methods=['GET'])
-@login_required
-@require_role('operator')
-def confirmar():
-    return render_template('reservar_espacios.html')
 
 @app.route('/sedes', methods=['GET'])
 @login_required
@@ -214,10 +210,6 @@ def submit_materials(case=-1):
     #Seteo de variables de proceso los materiales y cantidades como si fuera un dump de json
     materials_json = json.dumps(data["materiales"])
 
-    #Obtenemos el case id
-    #response = requests.get(f"{base_url}/get_case_id")
-    #case_id = response.json()
-
     # Usar un valor predeterminado para case si es None
     if case == -1: 
         # Obtener el case id
@@ -226,11 +218,10 @@ def submit_materials(case=-1):
     else:
         # Utilizar el valor proporcionado para case
         case_id = case
-
+    print(type(case_id))
     # Setear las variables del proceso
-    response0 = requests.put(f"{base_url}/setvariablebycase/{case_id}/fecha_lanzamiento/{data['fecha_lanzamiento']}/java.lang.String")
-    response = requests.put(f"{base_url}/setvariablebycase/{case_id}/materials_cants/{materials_json}/java.lang.String")
-
+    response0 = requests.put(f"{base_url}/setvariablebycase/{int(case_id)}/fecha_lanzamiento/{data['fecha_lanzamiento']}/java.lang.String")
+    response = requests.put(f"{base_url}/setvariablebycase/{int(case_id)}/materials_cants/{materials_json}/java.lang.String")
     # Verificar si las variables se setearon correctamente
     if response.status_code != 200 or response0.status_code != 200:
         return "Error al establecer las variables del proceso"
@@ -244,31 +235,30 @@ def submit_materials(case=-1):
     
     # Asignar la tarea al usuario
     response3 = requests.put(f"{base_url}/assigntask/{str(task_id)}/{str(user_id)}")
-    
+    sigue = True
     if response3.status_code == 200:
         # Completar la tarea para avanzar el flujo
         response4 = requests.post(f"{base_url}/completeactivity/{task_id}")
 
         if response4.status_code == 200:
-            time.sleep(7) 
             # Consulta al endpoint de Bonita para obtener las tareas pendientes para el caso
             response_tasks = requests.get(f"{base_url}/get_pending_tasks/{int(case_id)}")
             if response_tasks.status_code == 200:
                 tasks_data = response_tasks.json()
-                # Busca en las tareas a ver si la tarea de reserva de materiales está pendiente o la de establecer para 
-                # ver cual mostrar en el front
-                if any(task for task in tasks_data if task["name"] == "Reservar materiales" and task["state"] == "ready"):
-                    #Obtengo la respuesta de la api que se almaceno como var de proceso en bonita
-                    response_proveedores = requests.get(f"{base_url}/getvariablebycase/{int(case_id)}/proveedores")
-                    proveedores = response_proveedores.json()
-                    #Casteo de string a json diccionario en python
-                    proveedores_data = json.loads(proveedores['proveedores'])
-                    return render_template('reserve_materials.html',proveedores=proveedores_data, case= case_id)
-                elif any(task for task in tasks_data if task["name"] == "Establecer materiales y cantidades" and task["state"] == "ready"):
-                    return render_template('materials.html', case= case_id)
-                else:
-                    print (tasks_data)
-                    return "Estado desconocido. Por favor, revisa las tareas pendientes en Bonita."
+                while not any(task for task in tasks_data if task["name"] in ("Reservar materiales","Establecer materiales y cantidades") and task["state"] == "ready" and task["caseId"] == str(case_id)) or sigue:
+                    time.sleep(5)
+                    sigue = False
+                    response_tasks = requests.get(f"{base_url}/get_pending_tasks/{int(case_id)}")
+                    tasks_data = response_tasks.json()
+                    if any(task for task in tasks_data if task["name"] == "Reservar materiales" and task["state"] == "ready"):
+                        #Obtengo la respuesta de la api que se almaceno como var de proceso en bonita
+                        response_proveedores = requests.get(f"{base_url}/getvariablebycase/{int(case_id)}/proveedores")
+                        proveedores = response_proveedores.json()
+                        #Casteo de string a json diccionario en python
+                        proveedores_data = json.loads(proveedores['proveedores'])
+                        return render_template('reserve_materials.html',proveedores=proveedores_data, case= case_id)
+                    elif any(task for task in tasks_data if task["name"] == "Establecer materiales y cantidades" and task["state"] == "ready"):
+                        return render_template('materials.html', case= int(case_id))
             else:
                 return "Error al consultar las tareas pendientes en Bonita."
         else:
@@ -341,10 +331,6 @@ def confirmar_proveedores(case=-1):
                 # ver cual mostrar en el front
                 print(tasks_data)
                 if any(task for task in tasks_data if task["name"] == "Reservar espacios de fabricacion para la coleccion" and task["state"] == "ready"):
-                    print('entra')
-                    #Obtengo la respuesta de la api que se almaceno como var de proceso en bonita
-                    
-                    ##ACA ESTA EL BARDO, CREO Q NO SE ESTA ALMACENANDO EN LA API E BONITA :(
                     response_espacios = requests.get(f"{base_url}/getvariablebycase/{int(case_id)}/espacios")
                     print(response_espacios)
                     espacios = response_espacios.json()
@@ -417,6 +403,8 @@ def confirmar_espacio(case=-1):
 @login_required
 def confirm_plan(case=-1):
     confirmo = request.form.get('confirmo')
+    print(confirmo)
+    print(case)
     if case == -1: 
         # Obtener el case id
         response = requests.get(f"{base_url}/get_case_id")
@@ -424,6 +412,7 @@ def confirm_plan(case=-1):
     else:
         # Utilizar el valor proporcionado para case
         case_id = case
+    print(case)
     response = requests.put(f"{base_url}/setvariablebycase/{int(case_id)}/confirmo/{confirmo}/java.lang.Boolean")
     response1 = requests.get(f"{base_url}/searchactivitybycase/{case_id}/Confirmar-Plan-de-Fabricacion")
     task_id = response1.json()[0]['id']
@@ -436,10 +425,12 @@ def confirm_plan(case=-1):
         #Retornar a index de operadores MODIFICAR
         return {"message": "Plan de fabricacion confirmado exitosamente!"}
     else:
-        return render_template('materials.html', case= case_id)
+        return redirect('/operators')
 
 
 @app.route('/update_collection', methods=['POST'])
+@login_required
+@require_role('marketing')
 def update_order():
     collection_id = request.form['collection_id']
     new_sede = request.form['new_sede']
@@ -489,6 +480,36 @@ def enviar_lote(case=-1):
             unset = requests.get(f"{base_url}/get_unset_collections")
             set= requests.get(f"{base_url}/get_set_collections")
             return render_template('coleccion_sede.html', unset= unset.json(), set=set.json())
+
+
+@app.route('/indicators', methods=["GET"])
+@login_required
+@require_role('marketing')
+def get_indicators():
+    collections_sedes = requests.get(f"{base_url}/get_all_sedes")
+    datos = list(collections_sedes.json())
+    # Contabilizar las ocurrencias
+    conteo = {}
+    for item in datos:
+        sede = item['sede']
+        if sede in conteo:
+            conteo[sede] += 1
+        else:
+            conteo[sede] = 1
+
+    prom_dias_fabrication = requests.get(f"{base_url}/get_prom_dias")
+    
+    result = requests.get(f"{base_url}/get_finished")
+    result = result.json()
+    total_tareas = result['finalizadas'] + result['pendientes']
+
+    # Calcula el porcentaje de tareas finalizadas
+    if total_tareas > 0:
+        porcentaje_finalizadas = (result['finalizadas'] / total_tareas) * 100
+    else:
+        porcentaje_finalizadas = 0
+    return render_template('indicators.html', datos = conteo, promedio = prom_dias_fabrication.json(), porcentaje = porcentaje_finalizadas)
+
 
 if __name__ == '__main__':
     app.run(port=5001, debug=True)

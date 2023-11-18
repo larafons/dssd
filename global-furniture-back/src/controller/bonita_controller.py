@@ -87,6 +87,7 @@ def set_variable(task_id, variable, value, tipo):
 @login_required
 def set_variable_by_case(case_id, variable, value, tipo):
     response = Process.set_variable_by_case(case_id, variable, value, tipo)
+    print(response.status_code)
     return str(response.status_code)
 
 @app.route('/assigntask/<string:task_id>/<string:user_id>', methods=['PUT'])
@@ -176,6 +177,24 @@ def update_collection(collection_id, new_sede):
 def send_collection(case):
     response = Process.send_collection(case)
     return response
+
+
+@app.route('/get_all_sedes', methods=["GET"])
+def get_all_sedes():
+    response = Process.get_all_sedes()
+    return response
+
+@app.route('/get_prom_dias', methods=["GET"])
+def get_prom_dias():
+    response = Process.get_prom_dias()
+    return jsonify(response)
+
+@app.route('/get_finished', methods=["GET"])
+def get_finished():
+    response = Process.get_finished()
+    print(response)
+    return jsonify(response)
+
 
 class Process:
     APItoken =''
@@ -293,6 +312,56 @@ class Process:
         collections = Process.get_unset_collections()
         return collections
     
+    @staticmethod
+    def get_all_sedes():
+       sedes = db.model.find({}, {'sede': 1, '_id': 0})
+       list_sedes = list(sedes)
+       return list_sedes
+   
+    @staticmethod
+    def get_finished():
+        pipeline = [
+            {
+                "$group": {
+                    "_id": "$finalizada",
+                    "cantidad": {"$sum": 1}
+                }
+            }
+        ]
+
+        resultado = list(db.model.aggregate(pipeline))
+
+        cantidad_true = 0
+        cantidad_false = 0
+
+        for doc in resultado:
+            if doc["_id"]:
+                cantidad_true = doc["cantidad"]
+            else:
+                cantidad_false = doc["cantidad"]
+        result = {"finalizadas": cantidad_true,
+                  "pendientes": cantidad_false}
+        print(f"Cantidad de documentos con 'finalizada' en True: {cantidad_true}")
+        print(f"Cantidad de documentos con 'finalizada' en False: {cantidad_false}")
+        return result
+    @staticmethod
+    def get_prom_dias():
+        pipeline = [
+            {
+                "$group": {
+                    "_id": None,
+                    "promedio_plazo_fabricacion": {"$avg": {"$toInt": "$plazo_fabricacion"}}
+                }
+            }
+        ]
+        resultado = list(db.model.aggregate(pipeline))
+        if resultado:
+            promedio = resultado[0]["promedio_plazo_fabricacion"]
+            return round(promedio)
+        else:
+            print("No se encontraron documentos en la colección.")
+            return 0
+        
     @staticmethod
     def set_variable(task_id, variable, value, tipo):
         task_response = cookieJar.get(f"{base_url}API/bpm/userTask/{task_id}")
