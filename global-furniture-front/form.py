@@ -7,9 +7,13 @@ import requests
 import base64
 import json
 import matplotlib.pyplot as plt
+from cryptography.fernet import Fernet
 
 app = Flask(__name__)
 base_url = "http://localhost:5000" 
+
+key = Fernet.generate_key()
+cipher_suite = Fernet(key)
 
 # Decorador personalizado para proteger rutas
 def login_required(route_function):
@@ -28,7 +32,9 @@ def require_role(role):
         def wrapped_view(*args, **kwargs):
             # Obtiene el valor del rol de la cookie 'role'
             user_role = request.cookies.get('role')
-            if user_role == role:
+            # Decrypt
+            plain_text = (cipher_suite.decrypt(role)).decode()
+            if user_role == plain_text:
                 # El usuario tiene el rol requerido, permite el acceso
                 return view_func(*args, **kwargs)
             else:
@@ -130,6 +136,9 @@ def submit_login():
         role_data = requests.get(f"{base_url}/get_role_data/{role_json[0]['role_id']}")
         role_data_json = role_data.json()
         token = response.json()
+        #Very hard encryption
+        data = "VLLC!AirForces".encode()
+        cipher_role = cipher_suite.encrypt(role_data_json["name"])
         #Redirige a a persona dependiendo del rol
         if (role_data_json["name"] == 'designer'):
             resp = make_response(redirect('/designers'))
@@ -138,7 +147,7 @@ def submit_login():
         elif (role_data_json["name"] == 'marketing'):
             resp = make_response(redirect('/marketing'))
         # Establecer la cookie X-Bonita-API-Token en la respuesta
-        resp.set_cookie('role', role_data_json["name"])
+        resp.set_cookie('role', cipher_role)
         resp.set_cookie('X-Bonita-API-Token', token["bonita_token"])
         resp.set_cookie('JSESSIONID', token["bonita_auth"])
         return resp

@@ -209,8 +209,7 @@ class Process:
                 token = cookieJar.cookies.get("X-Bonita-API-Token")
                 sessionId = cookieJar.cookies.get("JSESSIONID")
                 cookieJar.headers.update({
-                    'bonita_token': cookieJar.cookies.get("X-Bonita-API-Token"),
-                    'bonita_auth': cookieJar.cookies.get("JSESSIONID")
+                    'X-Bonita-API-Token': token
                 })
                 if token:
                     # Almacenar el token en una variable de sesión
@@ -358,6 +357,9 @@ class Process:
 
     @staticmethod
     def set_variable_by_case(case_id, variable, value, tipo):
+        print(cookieJar.cookies.get("X-Bonita-API-Token"))
+        print(cookieJar.cookies.get("JSESSIONID"))
+        print(cookieJar.headers)
         response = cookieJar.put(f"{base_url}API/bpm/caseVariable/{case_id}/{variable}", json={"type": tipo, "value": value})
         return response
 
