@@ -429,6 +429,8 @@ def confirm_plan(case=-1):
     user_id = response2.json()[0]['id']
     requests.put(f"{base_url}/assigntask/{str(task_id)}/{str(user_id)}")
     response2 = requests.post(f"{base_url}/completeactivity/{task_id}")
+    response3 = requests.post(f"{base_url}/send_collection/{case}")
+    print(response3)
     time.sleep(7)
     if confirmo == 'true':
         #Retornar a index de operadores MODIFICAR
@@ -471,8 +473,6 @@ def enviar_lote(case=-1):
         # Utilizar el valor proporcionado para case
         case_id = case
     # Actualizar en la base de datos (usando pymongo)
-    response = requests.post(f"{base_url}/send_collection/{case}")
-    print(response)
     response2 = requests.get(f"{base_url}/searchactivitybycase/{case}/Asociar-lotes-con-sede")
     task_id = response2.json()[0]['id']
     print(task_id)
