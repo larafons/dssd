@@ -33,8 +33,8 @@ def require_role(role):
             # Obtiene el valor del rol de la cookie 'role'
             user_role = request.cookies.get('role')
             # Decrypt
-            plain_text = (cipher_suite.decrypt(role)).decode()
-            if user_role == plain_text:
+            plain_text = (cipher_suite.decrypt(user_role)).decode()
+            if role == plain_text:
                 # El usuario tiene el rol requerido, permite el acceso
                 return view_func(*args, **kwargs)
             else:
@@ -138,7 +138,7 @@ def submit_login():
         token = response.json()
         #Very hard encryption
         data = "VLLC!AirForces".encode()
-        cipher_role = cipher_suite.encrypt(role_data_json["name"])
+        cipher_role = cipher_suite.encrypt(role_data_json["name"].encode())
         #Redirige a a persona dependiendo del rol
         if (role_data_json["name"] == 'designer'):
             resp = make_response(redirect('/designers'))
