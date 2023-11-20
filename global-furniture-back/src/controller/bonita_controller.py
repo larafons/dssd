@@ -77,12 +77,6 @@ def get_pending_tasks(case_id):
     response = Process.get_pending_tasks(case_id)
     return jsonify(response)
 
-@app.route('/setvariable/<int:task_id>/<string:variable>/<value>/<string:tipo>', methods=['PUT'])
-@login_required
-def set_variable(task_id, variable, value, tipo):
-    response = Process.set_variable(task_id, variable, value, tipo)
-    return jsonify(response.json())
-
 @app.route('/setvariablebycase/<int:case_id>/<string:variable>/<value>/<string:tipo>', methods=['PUT'])
 @login_required
 def set_variable_by_case(case_id, variable, value, tipo):
@@ -361,13 +355,6 @@ class Process:
         else:
             print("No se encontraron documentos en la colección.")
             return 0
-        
-    @staticmethod
-    def set_variable(task_id, variable, value, tipo):
-        task_response = cookieJar.get(f"{base_url}API/bpm/userTask/{task_id}")
-        case_id = task_response.json()['data']['caseId']
-        response = cookieJar.put(f"{base_url}API/bpm/caseVariable/{case_id}/{variable}", json={variable: value, 'type': tipo})
-        return response
 
     @staticmethod
     def set_variable_by_case(case_id, variable, value, tipo):
