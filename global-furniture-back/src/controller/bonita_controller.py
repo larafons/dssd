@@ -169,9 +169,20 @@ def update_collection(collection_id, new_sede):
 @app.route('/send_collection/<int:case>', methods=['POST'])
 @login_required
 def send_collection(case):
-    response = Process.send_collection(case)
+    response = Process.send_collectionOperator(case)
     return response
 
+@app.route('/send_collection_marketing/<int:case>', methods=['POST'])
+@login_required
+def send_collection_marketing(case):
+    response = Process.send_collectionMarketing(case)
+    return response
+
+@app.route('/finish_collection/<int:case>', methods=['POST'])
+@login_required
+def finishCollection(case):
+    response = Process.finishCollection(case)
+    return response
 
 @app.route('/get_all_sedes', methods=["GET"])
 def get_all_sedes():
@@ -283,7 +294,12 @@ class Process:
     
     @staticmethod
     def get_unset_collections():
-        collections = db.model.find({ "sede": "Ninguna" })
+        collections = db.model.find({
+        "$or": [
+            {"finalizadaMarketing": False},
+            {"finalizadaOperator": False}
+        ]
+        })
         collections_list = list(collections)
         collections_json = json.dumps(collections_list, default=str)  # default=str para manejar objetos no serializables
         return collections_json
@@ -291,8 +307,9 @@ class Process:
     @staticmethod
     def get_set_collections():
         collections = db.model.find({
-            "sede": {"$ne": "Ninguna"},
-            "finalizada": False
+            "finalizadaOperator": True,
+            "finalizadaMarketing": True,
+            "mostrar": True
         })
         collections_list = list(collections)
         collections_json = json.dumps(collections_list, default=str)
@@ -427,8 +444,18 @@ class Process:
         return process["rootCaseId"]
     
     @staticmethod
-    def send_collection(case):
-        db.model.update_one({'case_id': int(case)}, {'$set': {'finalizada': True}})
+    def send_collectionOperator(case):
+        db.model.update_one({'case_id': int(case)}, {'$set': {'finalizadaOperator': True}})
+        return True
+    
+    @staticmethod
+    def send_collectionMarketing(case):
+        db.model.update_one({'case_id': int(case)}, {'$set': {'finalizadaMarketing': True}})
+        return True
+    
+    @staticmethod
+    def finishCollection(case):
+        db.model.update_one({'case_id': int(case)}, {'$set': {'mostrar': False}})
         return True
     
     @staticmethod

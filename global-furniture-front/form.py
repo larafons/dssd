@@ -113,6 +113,8 @@ def get_variables(case_id):
 def sedes():
     unset = requests.get(f"{base_url}/get_unset_collections")
     set= requests.get(f"{base_url}/get_set_collections")
+    print(unset.json())
+    print(set.json())
     return render_template('coleccion_sede.html', unset= unset.json(), set=set.json())
 
 @app.route('/login', methods=['POST'])
@@ -167,8 +169,10 @@ def submit_design():
         "informacion_adicional": request.form.get('informacion_adicional'),
         "file": base64.b64encode(file.read()).decode('utf-8'),
         "sede": "Ninguna",
-        "finalizada": False,
+        "finalizadaOperator": False,
+        "finalizadaMarketing": False,
         "case_id": 101,
+        "mostrar": True
     }
     plazo_fabricacion= request.form.get('plazo_fabricacion')
     # Harcodeamos el nombre del pool
@@ -451,6 +455,9 @@ def update_order():
     response2 = requests.get(f"{base_url}/searchactivitybycase/{collection_id}/Cargar-ordenes-de-distribucion")
     task_id = response2.json()[0]['id']
     print(task_id)
+    print('Hola')
+    response = requests.post(f"{base_url}/send_collection_marketing/{collection_id}")
+    print(response)
     #Buscar usuario generico
     response3 = requests.get(f"{base_url}/get_user_by_username/daniela.marketing")
     user_id = response3.json()[0]['id']
@@ -461,6 +468,7 @@ def update_order():
         #Completar la tarea
         response5 = requests.post(f"{base_url}/completeactivity/{task_id}")
         if response5.status_code == 200:
+            response = requests.get(f"{base_url}/get_unset_collections")
             return render_template('charge_order.html', collections=response.json(), message='Sede actualizada correctamente')
 
 @app.route('/enviar_lote/<int:case>', methods=['POST'])
@@ -486,6 +494,7 @@ def enviar_lote(case=-1):
         #Completar la tarea
         response5 = requests.post(f"{base_url}/completeactivity/{task_id}")
         if response5.status_code == 200:
+            requests.post(f"{base_url}/finish_collection/{case}")
             unset = requests.get(f"{base_url}/get_unset_collections")
             set= requests.get(f"{base_url}/get_set_collections")
             return render_template('coleccion_sede.html', unset= unset.json(), set=set.json())
