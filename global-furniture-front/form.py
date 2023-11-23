@@ -80,7 +80,7 @@ def designers():
 @login_required
 @require_role('marketing')
 def update_collection():
-    collections = requests.get(f"{base_url}/get_unset_collections")
+    collections = requests.get(f"{base_url}/get_not_sede")
     return render_template('charge_order.html', collections=collections.json())
 
 @app.route('/operators', methods=['GET'])
@@ -105,17 +105,6 @@ def marketing_page():
 def get_variables(case_id):
     response = requests.get(f"{base_url}/get_all_variables/{case_id}")
     return response.json()
-
-
-@app.route('/sedes', methods=['GET'])
-@login_required
-@require_role('marketing')
-def sedes():
-    unset = requests.get(f"{base_url}/get_unset_collections")
-    set= requests.get(f"{base_url}/get_set_collections")
-    print(unset.json())
-    print(set.json())
-    return render_template('coleccion_sede.html', unset= unset.json(), set=set.json())
 
 @app.route('/login', methods=['POST'])
 def submit_login():
@@ -483,11 +472,11 @@ def enviar_lote(case=-1):
     # Actualizar en la base de datos (usando pymongo)
     response2 = requests.get(f"{base_url}/searchactivitybycase/{case}/Asociar-lotes-con-sede")
     task_id = response2.json()[0]['id']
-    print(task_id)
+
     #Buscar usuario generico
     response3 = requests.get(f"{base_url}/get_user_by_username/daniela.marketing")
     user_id = response3.json()[0]['id']
-    print(user_id)
+
     #Asignar la tarea al usuario
     response4 = requests.put(f"{base_url}/assigntask/{str(task_id)}/{str(user_id)}")
     if response4.status_code == 200:
@@ -497,8 +486,26 @@ def enviar_lote(case=-1):
             requests.post(f"{base_url}/finish_collection/{case}")
             unset = requests.get(f"{base_url}/get_unset_collections")
             set= requests.get(f"{base_url}/get_set_collections")
-            return render_template('coleccion_sede.html', unset= unset.json(), set=set.json())
+            nueva = []
+            for item in set.json():
+                response = requests.get(f"{base_url}/getvariablebycase/{int(item['case_id'])}/termino")
+                if response.json()['termino'] == '200':
+                    nueva.append(item)
+            return render_template('coleccion_sede.html', unset= unset.json(), set=nueva)
 
+
+@app.route('/sedes', methods=['GET'])
+@login_required
+@require_role('marketing')
+def sedes():
+    unset = requests.get(f"{base_url}/get_unset_collections")
+    set= requests.get(f"{base_url}/get_set_collections")
+    nueva = []
+    for item in set.json():
+        response = requests.get(f"{base_url}/getvariablebycase/{int(item['case_id'])}/termino")
+        if response.json()['termino'] == '200':
+            nueva.append(item)
+    return render_template('coleccion_sede.html', unset= unset.json(), set=nueva)
 
 @app.route('/indicators', methods=["GET"])
 @login_required
@@ -519,6 +526,7 @@ def get_indicators():
     
     result = requests.get(f"{base_url}/get_finished")
     result = result.json()
+    print(result)
     total_tareas = result['finalizadas'] + result['pendientes']
 
     # Calcula el porcentaje de tareas finalizadas

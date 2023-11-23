@@ -67,7 +67,7 @@
         {% for coleccion in set %}
         <li>
             <div class="form-group container2">
-                <p style="margin-right: 5px;">La colección {{coleccion.case_id}} se encuentra finalizada</p>
+                <p style="margin-right: 5px;">La colección {{coleccion.case_id}} esta lista para enviar a la sede</p>
                 <form method="POST" action="/enviar_lote/{{coleccion.case_id}}">
                     <input type="submit" class="btn btn-primary" value="Enviar">
                 </form>
@@ -90,15 +90,16 @@
     {% endfor %}
     </ul>
     <button onclick="cargar()" style="margin-left: 3%;">Cargar ordenes de distribución</button>
+    <button onclick="volver()" style="margin-left: 3%;">Volver al menú</button>
 
     <script>
         function cargar() {
-                window.location.href = `/charge_order`;
-            }
+            window.location.href = `/charge_order`;
+        }
+        function volver() {
+            window.location.href = `/marketing`;
+        }
     </script>
 
 </body>
-<script>
-
-</script>
 </html>

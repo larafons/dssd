@@ -61,12 +61,17 @@
             <button onclick="cargar()">Cargar ordenes de distribucion</button>
             <br>
             <button onclick="asociar()">Asociar lotes con sedes</button>
+            <br>
+            <button onclick="indicadores()">Ver indicadores</button>
         </div>
 </html>
 
 <script>
     function cargar() {
         window.location.href = `/charge_order`;
+    }
+    function indicadores() {
+        window.location.href  = `/indicators`;
     }
 
     function asociar(){

@@ -81,7 +81,6 @@ def get_pending_tasks(case_id):
 @login_required
 def set_variable_by_case(case_id, variable, value, tipo):
     response = Process.set_variable_by_case(case_id, variable, value, tipo)
-    print(response.status_code)
     return str(response.status_code)
 
 @app.route('/assigntask/<string:task_id>/<string:user_id>', methods=['PUT'])
@@ -155,6 +154,12 @@ def get_unset_collections():
     response = Process.get_unset_collections()
     return response
 
+@app.route('/get_not_sede', methods=['GET'])
+def get_not_sede():
+    response = Process.get_not_sede()
+    return response
+
+
 @app.route('/get_set_collections', methods=['GET'])
 def get_set_collections():
     response = Process.get_set_collections()
@@ -197,7 +202,6 @@ def get_prom_dias():
 @app.route('/get_finished', methods=["GET"])
 def get_finished():
     response = Process.get_finished()
-    print(response)
     return jsonify(response)
 
 
@@ -235,7 +239,6 @@ class Process:
                 return None  # Autenticación fallida
 
         except requests.exceptions.RequestException as e:
-            print(f"Error al hacer la solicitud: {str(e)}")
             return None
             
     @staticmethod
@@ -245,7 +248,6 @@ class Process:
             response = cookieJar.get(f"{base_url}API/bpm/process?p=0&c=1000")
             return response.json()
         except requests.exceptions.RequestException as e:
-            print(f"Error al hacer la solicitud: {str(e)}")
             return None
 
     @staticmethod
@@ -261,7 +263,6 @@ class Process:
             process = response.json()[0]
             return process["id"]
         except requests.exceptions.RequestException as e:
-            print(f"Error al hacer la solicitud: {str(e)}")
             return None
 
     @staticmethod
@@ -279,7 +280,6 @@ class Process:
             response = cookieJar.post(f"{base_url}API/bpm/process/{strprocess_id}/instantiation")
             return response
         except requests.exceptions.RequestException as e:
-            print(f"Error al hacer la solicitud: {str(e)}")
             return None
         
     @staticmethod
@@ -304,6 +304,14 @@ class Process:
         collections_json = json.dumps(collections_list, default=str)  # default=str para manejar objetos no serializables
         return collections_json
     
+    
+    @staticmethod
+    def get_not_sede():
+        collections = db.model.find({ "sede": "Ninguna" })
+        collections_list = list(collections)
+        collections_json = json.dumps(collections_list, default=str)  # default=str para manejar objetos no serializables
+        return collections_json
+    
     @staticmethod
     def get_set_collections():
         collections = db.model.find({
@@ -317,7 +325,6 @@ class Process:
     
     @staticmethod
     def update_collection(collection_id, new_sede):
-        print("id: "+str(collection_id))
         db.model.update_one({'case_id': int(collection_id)}, {'$set': {'sede': new_sede}})
         collections = Process.get_unset_collections()
         return collections
@@ -333,7 +340,7 @@ class Process:
         pipeline = [
             {
                 "$group": {
-                    "_id": "$finalizada",
+                    "_id": "$mostrar",
                     "cantidad": {"$sum": 1}
                 }
             }
@@ -349,10 +356,8 @@ class Process:
                 cantidad_true = doc["cantidad"]
             else:
                 cantidad_false = doc["cantidad"]
-        result = {"finalizadas": cantidad_true,
-                  "pendientes": cantidad_false}
-        print(f"Cantidad de documentos con 'finalizada' en True: {cantidad_true}")
-        print(f"Cantidad de documentos con 'finalizada' en False: {cantidad_false}")
+        result = {"finalizadas": cantidad_false,
+                  "pendientes": cantidad_true}
         return result
     @staticmethod
     def get_prom_dias():
@@ -369,14 +374,10 @@ class Process:
             promedio = resultado[0]["promedio_plazo_fabricacion"]
             return round(promedio)
         else:
-            print("No se encontraron documentos en la colección.")
             return 0
 
     @staticmethod
     def set_variable_by_case(case_id, variable, value, tipo):
-        print(cookieJar.cookies.get("X-Bonita-API-Token"))
-        print(cookieJar.cookies.get("JSESSIONID"))
-        print(cookieJar.headers)
         response = cookieJar.put(f"{base_url}API/bpm/caseVariable/{case_id}/{variable}", json={"type": tipo, "value": value})
         return response
 
@@ -475,7 +476,6 @@ class Process:
             if token:
                 # Almacenar el token en una variable
                 APItoken = token
-                print("Token JWT obtenido con éxito.")
 
                 # Llamar al método /buscar/<material>/<fecha>/<cant> con el token
                 buscar_url = f"{base_url_api}/buscar/{material}/{fecha}/{cantidad}"  # Reemplaza con los valores deseados
@@ -485,17 +485,12 @@ class Process:
                 if response.status_code == 200:
                     data = response.json()
                     # Procesa los datos de la solicitud /buscar
-                    print("Resultado de la búsqueda:")
-                    print(data)
                     return data
                 else:
-                    print(f"Error al llamar la ruta de búsqueda: {response.status_code}, {response.json()}")
                     return(f"Error al llamar la ruta de búsqueda: {response.status_code}, {response.json()}")
             else:
-                print("No se pudo obtener un token JWT.")
                 return ("No se pudo obtener un token JWT.")
         else:
-            print(f"Error en la autenticación: {response.status_code}, {response.json()}")
             return (f"Error en la autenticación: {response.status_code}, {response.json()}")
 
 if __name__ == "__main__":
