@@ -432,7 +432,7 @@ def update_order():
         #Completar la tarea
         response5 = requests.post(f"{base_url}/completeactivity/{task_id}")
         if response5.status_code == 200:
-            response = requests.get(f"{base_url}/get_unset_collections")
+            response = requests.get(f"{base_url}/get_not_sede")
             return render_template('charge_order.html', collections=response.json(), message='Sede actualizada correctamente')
 
 @app.route('/enviar_lote/<int:case>', methods=['POST'])

@@ -50,7 +50,7 @@ datos = {
         {"name": "Proveedor2", "cantidad": 200, "fecha": "2023-12-02"},
         {"name": "Proveedor3", "cantidad": 300, "fecha": "2023-12-03"},
         {"name": "Proveedor4", "cantidad": 400, "fecha": "2023-12-04"},
-        {"name": "Proveedor5", "cantidad": 500, "fecha": "2023-12-05"},
+        {"name": "Proveedor5", "cantidad": 550, "fecha": "2023-12-05"},
     ],
 }
 
