@@ -42,6 +42,11 @@ def login():
     password= body.get('password')
     return Process.login(username, password)
 
+@app.route('/logout', methods=['POST'])
+def logout():
+    response = Process.logout()
+    return str(response.status_code)
+
 @app.route('/getall', methods=['GET'])
 @login_required
 def getall():
@@ -241,6 +246,15 @@ class Process:
         except requests.exceptions.RequestException as e:
             return None
             
+    @staticmethod
+    def logout():
+        try:
+            logout_url = f"{base_url}/logoutservice"
+            response = cookieJar.get(logout_url)
+            return response
+        except requests.exceptions.RequestException as e:
+            return None
+
     @staticmethod
     def get_all_processes():
         try:

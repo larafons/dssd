@@ -440,7 +440,6 @@ class ConsultarFinResource(Resource):
         if hitos:
             return {"mensaje": "Coleccion en desarrollo"}, 402
         else:
-            print("Asd")
             hitos.extend(["Ya estan disponibles todos los materiales solicitados", "A partir de hoy esta disponible el espacio de fabricacion", "Todos los materiales fueron enviados a la fabrica", "Inicio el proceso de ensamblado", "Finalizo la etapa de fabricacion: coleccion terminada"])
             return {"mensaje": "Coleccion finalizada"}, 200
 
