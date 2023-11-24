@@ -471,18 +471,21 @@ def enviar_lote(case=-1):
         case_id = case
     # Actualizar en la base de datos (usando pymongo)
     response2 = requests.get(f"{base_url}/searchactivitybycase/{case}/Asociar-lotes-con-sede")
-    print(response2)
-    task_id = response2.json()[0]['id']
+    print(response2.json())
+    task_id1 = response2.json()[0]['id']
+    task_id2 = response2.json()[1]['id']
 
     #Buscar usuario generico
     response3 = requests.get(f"{base_url}/get_user_by_username/daniela.marketing")
     user_id = response3.json()[0]['id']
 
     #Asignar la tarea al usuario
-    response4 = requests.put(f"{base_url}/assigntask/{str(task_id)}/{str(user_id)}")
+    response4 = requests.put(f"{base_url}/assigntask/{str(task_id1)}/{str(user_id)}")
+    response4 = requests.put(f"{base_url}/assigntask/{str(task_id2)}/{str(user_id)}")
     if response4.status_code == 200:
         #Completar la tarea
-        response5 = requests.post(f"{base_url}/completeactivity/{task_id}")
+        response5 = requests.post(f"{base_url}/completeactivity/{task_id1}")
+        response5 = requests.post(f"{base_url}/completeactivity/{task_id2}")
         if response5.status_code == 200:
             requests.post(f"{base_url}/finish_collection/{case}")
             unset = requests.get(f"{base_url}/get_unset_collections")

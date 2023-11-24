@@ -57,6 +57,8 @@
         {% if message %}
             <p>{{ message }}</p>
         {% endif %}
+
+        {% if collections %}
         <form action="/update_collection" method="post">
             <div class="form-group">
                 <label for="collection_id">Seleccione la colección a modificar:</label>
@@ -79,6 +81,9 @@
                 <input type="submit" value="Actualizar Sede">
             </div>
         </form>
+        {% else %}
+            <h2>No hay colecciones</h2>
+        {% endif %}
         <br>
         <button onclick="volver()" style="margin-left: 3%;">Volver al menú</button>
     </div>
