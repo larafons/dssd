@@ -421,7 +421,7 @@ class ConsultarHitosResource(Resource):
     @ns.response(200, 'Hito retornado')
     @ns.response(401, 'Token inválido, expirado o no proporcionado')
     def get(self):
-        time.sleep(1)
+        time.sleep(2)
         if hitos:
             #Change and put the pop in a json where the key es "message"
             return {"mensaje": f"{hitos.pop(0)}"}, 200
@@ -436,10 +436,11 @@ class ConsultarFinResource(Resource):
     @ns.response(401, 'Token inválido, expirado o no proporcionado')
     @ns.response(402, 'Coleccion en desarrollo')
     def get(self):
-        time.sleep(1)
+        time.sleep(2)
         if hitos:
             return {"mensaje": "Coleccion en desarrollo"}, 402
         else:
+            print("entro")
             hitos = ["Ya estan disponibles todos los materiales solicitados", "A partir de hoy esta disponible el espacio de fabricacion", "Todos los materiales fueron enviados a la fabrica", "Inicio el proceso de ensamblado", "Finalizo la etapa de fabricacion: coleccion terminada"]
             return {"mensaje": "Coleccion finalizada"}, 200
 

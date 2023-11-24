@@ -471,6 +471,7 @@ def enviar_lote(case=-1):
         case_id = case
     # Actualizar en la base de datos (usando pymongo)
     response2 = requests.get(f"{base_url}/searchactivitybycase/{case}/Asociar-lotes-con-sede")
+    print(response2)
     task_id = response2.json()[0]['id']
 
     #Buscar usuario generico
