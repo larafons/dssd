@@ -447,7 +447,6 @@ class FinalizarColeccion(Resource):
     def post(self):
         data = request.get_json()
         case_id = data.get("case_id")
-        print(finalizado)
         if case_id not in finalizado.keys():
             return {"mensaje": "Coleccion no encontrada"}, 402
         else:
