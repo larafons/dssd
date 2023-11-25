@@ -145,6 +145,14 @@ def get_material(material, fecha, cantidad):
 def get_case_id():
     return Process.get_case_id()
 
+@app.route('/get_all_cases', methods=['GET'])
+def get_all_cases():
+    return Process.get_all_cases()
+
+@app.route('/get_archived_cases', methods=['GET'])
+def get_archived_cases():
+    return Process.get_archived_cases()
+
 @app.route('/get_case_id_from_mongo/<string:id>', methods=['GET'])
 def get_case_id_from_mongo(id):
     return Process.get_case_id_from_mongo(id)
@@ -457,6 +465,18 @@ class Process:
         request = cookieJar.get(f"{base_url}API/bpm/case?f=name=entrega-1")
         process = request.json()[0]
         return process["rootCaseId"]
+    
+    @staticmethod
+    def get_all_cases():
+        request = cookieJar.get(f"{base_url}API/bpm/case?f=name=entrega-1")
+        process = request.json()
+        return process
+    
+    @staticmethod
+    def get_archived_cases():
+        request = cookieJar.get(f"{base_url}API/bpm/archivedCase")
+        process = request.json()
+        return process
     
     @staticmethod
     def send_collectionOperator(case):

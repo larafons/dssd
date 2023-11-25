@@ -5,65 +5,82 @@
     <title>Indicadores</title>
     <link rel="icon" href="favicon.png" type="image/png">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        #graficoSedes {
-            max-width: 400px; /* Ajusta este valor según tus necesidades */
-            max-height: 400px; /* Ajusta este valor según tus necesidades */
-            margin: auto;
-        }
-    </style>
 </head>
 <style>
+     #graficoSedes, #graficoEspacios {
+            max-width: 450px; /* Ajusta este valor según tus necesidades */
+            max-height: 450px; /* Ajusta este valor según tus necesidades */
+            margin: auto;
+    }
+
     body {
-            font-family: Arial, sans-serif;
-        }
-        .container {
-            margin-top: 50px;
-            border: 2px solid #000;
-            padding: 20px;
-            border-radius: 10px;
-        }
-        .form-group label {
-            font-weight: bold;
-        }
-        .form-group input[type="text"],
-        .form-group input[type="date"],
-        .form-group textarea {
-            width: 100%;
-            padding: 10px;
-            font-size: 16px;
-            border: 1px solid #000;
-            border-radius: 5px;
-        }
-        .form-group input[type="submit"] {
-            background-color: #000;
-            color: #fff;
-            font-size: 18px;
-            padding: 10px 20px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-        .form-group input[type="submit"]:hover {
-            background-color: #333;
-        }
-        h1{
-            align-content: center;
-        }
-        button{
-            background-color: #000;
-            color: #fff;
-            font-size: 18px;
-            padding: 10px 20px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            margin-left: 6px;
-        }
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+    }
+
+    .container {
+        margin-top: 50px;
+        border: 2px solid #000;
+        padding: 20px;
+        border-radius: 10px;
+    }
+
+    h2 {
+        margin-bottom: 10px;
+    }
+
+    /* Estilo para los gráficos */
+    #graficoSedes,
+    #graficoEspacios {
+        max-width: 45%; /* Ajusta según tus necesidades */
+        margin-right: 5%; /* Ajusta según tus necesidades */
+    }
+
+    /* Estilo para los datos numéricos */
+    #promedioDias,
+    #porcentaje {
+        display: inline-block;
+        width: 45%; /* Ajusta según tus necesidades */
+        margin-bottom: 10px; /* Ajusta según tus necesidades */
+    }
+
+    /* Botón de volver */
+    button {
+        background-color: #000;
+        color: #fff;
+        font-size: 18px;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        margin-top: 10px;
+    }
+
+    button:hover {
+        background-color: #333;
+    }
+
+    /* Clearfix para manejar el salto de línea entre los datos numéricos y el botón */
+    .clearfix::after {
+        content: "";
+        display: table;
+        clear: both;
+    }
+
 </style>
 <body>
-    <h2>Sedes más demandadas en envío de colecciones</h2>
-    <canvas id="graficoSedes"></canvas>
+    <div style="display: flex; width: 100%;">
+        <div>
+            <h2>Sedes más demandadas en envío de colecciones</h2>
+            <canvas id="graficoSedes"></canvas>
+        </div>
+        <div style="width: 15px;"></div>
+        <div>
+            <h2>Espacios utilizados en las colecciones en curso</h2>
+            <canvas id="graficoEspacios"></canvas>
+        </div>
+    </div>
 
     <h2>Promedio de plazos de fabricación</h2>
     <div id="promedioDias"></div>
@@ -76,6 +93,9 @@
         const datosSedes = JSON.parse('{{ datos | tojson | safe }}');
         const nombresSedes = Object.keys(datosSedes);
         const ocurrenciasSedes = Object.values(datosSedes);
+        const datosEspacios = JSON.parse('{{ espacios | tojson | safe }}');
+        const nombresEspacios = Object.keys(datosEspacios);
+        const ocurrenciasEspacios = Object.values(datosEspacios);
 
         // Colores para el gráfico (ajusta según necesidad)
         const colores = [
@@ -97,6 +117,23 @@
                     responsive: true,
                     maintainAspectRatio: false, 
                     backgroundColor: colores.slice(0, nombresSedes.length),
+                    borderColor: colores.map(color => color.replace('0.2', '1')),
+                    borderWidth: 1
+                }]
+            }
+        });
+
+         // Crear el gráfico de espacios
+         const ctxEspacios = document.getElementById('graficoEspacios').getContext('2d');
+        const graficoEspacios = new Chart(ctxEspacios, {
+            type: 'pie',
+            data: {
+                labels: nombresEspacios,
+                datasets: [{
+                    data: ocurrenciasEspacios,
+                    responsive: true,
+                    maintainAspectRatio: false, 
+                    backgroundColor: colores.slice(0, nombresEspacios.length),
                     borderColor: colores.map(color => color.replace('0.2', '1')),
                     borderWidth: 1
                 }]
