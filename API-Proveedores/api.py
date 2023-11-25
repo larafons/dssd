@@ -54,8 +54,7 @@ datos = {
     ],
 }
 
-hitos = ["Ya estan disponibles todos los materiales solicitados", "A partir de hoy esta disponible el espacio de fabricacion", "Todos los materiales fueron enviados a la fabrica", "Inicio el proceso de ensamblado", "Finalizo la etapa de fabricacion: coleccion terminada"]
-
+finalizado = {}
 
 reservas = {
     "algodon": [],
@@ -100,7 +99,8 @@ reserva_model = api.model('Reserva', {
         'material_4': fields.String(description='Tipo de material 4'),
         'cantidad_4': fields.Integer(description='Cantidad de material 4'),
         'name_4': fields.String(description='Nombre del proveedor 4'),
-    }))
+    })),
+    'case_id': fields.String(required=True, description='Id de la coleccion')
 })
 
 reserva_espacio_model = api.model('Reserva espacio', {
@@ -146,6 +146,9 @@ cancelar_model = api.model('Cancelar', {
     'fecha_espacio': fields.String(required=True, description='Fecha del espacio a cancelar')
 })
 
+finalizar_model = api.model('Finalizar', {
+    'case_id': fields.String(required=True, description='Id de la coleccion')
+})
 
 def cancelar_espacio(espacio, fecha_inicio):
     reservas = reservas_espacios[espacio]
@@ -233,7 +236,8 @@ class GetResource(Resource):
         res = { "reservas_materiales": reservas,
                 "reservas_espacios": reservas_espacios}
         return res
-    
+
+
 #Recurso para buscar proveedores
 @ns.route('/buscar')
 class BuscarResource(Resource):
@@ -314,6 +318,7 @@ class ReservarResource(Resource):
                         "cantidad": cantidad_reserva, 
                         "fecha_reserva": fecha_reserva
                     })
+        finalizado[data.get("case_id")] = False
         return {"status": "Reserva realizada con éxito"}, 200
 
 
@@ -414,33 +419,39 @@ class ConsultarEspaciosResource(Resource):
         reservas_espacios[nombre_espacio].append({"fecha_inicio": fecha_inicio, "fecha_fin": fecha_fin})
         return {"message": "reserva exitosa"}, 200
 
-@ns.route('/consultar_hitos')
-class ConsultarHitosResource(Resource):
-    @ns.doc(security='Bearer Auth')
-    @verify_token
-    @ns.response(200, 'Hito retornado')
-    @ns.response(401, 'Token inválido, expirado o no proporcionado')
-    def get(self):
-        time.sleep(2)
-        if hitos:
-            #Change and put the pop in a json where the key es "message"
-            return {"mensaje": f"{hitos.pop(0)}"}, 200
-        else:
-            return {"mensaje": "Finalizo la etapa de fabricacion: coleccion terminada"}, 200
-
-@ns.route('/consultar_fin')
+@ns.route('/consultar_fin/<string:case_id>')
 class ConsultarFinResource(Resource):
     @ns.doc(security='Bearer Auth')
     @verify_token
     @ns.response(200, 'Coleccion finalizada')
     @ns.response(401, 'Token inválido, expirado o no proporcionado')
     @ns.response(402, 'Coleccion en desarrollo')
-    def get(self):
-        time.sleep(2)
-        if hitos:
+    @ns.response(404, 'Coleccion no encontrada')
+    def get(self, case_id):
+        time.sleep(4)
+        if case_id not in finalizado.keys():
+            return {"mensaje": "Coleccion no encontrada"}, 404
+        elif not finalizado[case_id]:
             return {"mensaje": "Coleccion en desarrollo"}, 402
         else:
-            hitos.extend(["Ya estan disponibles todos los materiales solicitados", "A partir de hoy esta disponible el espacio de fabricacion", "Todos los materiales fueron enviados a la fabrica", "Inicio el proceso de ensamblado", "Finalizo la etapa de fabricacion: coleccion terminada"])
+            return {"mensaje": "Coleccion finalizada"}, 200
+
+@ns.route('/finalizar_coleccion')
+class FinalizarColeccion(Resource):
+    @ns.doc(security='Bearer Auth')
+    @ns.expect(finalizar_model)
+    @verify_token
+    @ns.response(200, 'Coleccion finalizada')
+    @ns.response(401, 'Token inválido, expirado o no proporcionado')
+    @ns.response(402, 'Coleccion no encontrada')
+    def post(self):
+        data = request.get_json()
+        case_id = data.get("case_id")
+        print(finalizado)
+        if case_id not in finalizado.keys():
+            return {"mensaje": "Coleccion no encontrada"}, 402
+        else:
+            finalizado[case_id] = True
             return {"mensaje": "Coleccion finalizada"}, 200
 
 
