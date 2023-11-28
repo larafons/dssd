@@ -502,6 +502,8 @@ def get_indicators():
 
     # Obtengo todos los cases para consultar por los espacios en el id
     conteo_espacios = {}
+    confirmados = 0
+    sin_confirmar= 0
     case_ids_response = requests.get(f"{base_url}/get_all_cases")
     case_ids_data = case_ids_response.json()
     # Recorro cada caso
@@ -509,6 +511,12 @@ def get_indicators():
         case_id = caso['id']
         # Obtengo el espacio seleccionado para el caso actual
         espacio_response = requests.get(f"{base_url}/getvariablebycase/{int(case_id)}/espacio_seleccionado")
+        plan_response = requests.get(f"{base_url}/getvariablebycase/{int(case_id)}/confirmo")
+        plan = plan_response.json()
+        if plan.get('confirmo') == 'true':
+            confirmados = confirmados + 1
+        else:
+            sin_confirmar = sin_confirmar + 1
         # Verifico si la respuesta fue exitosa antes de intentar acceder al JSON
         if espacio_response.status_code == 200:
             espacio_data = espacio_response.json()
@@ -532,7 +540,12 @@ def get_indicators():
         porcentaje_finalizadas = (result['finalizadas'] / total_tareas) * 100
     else:
         porcentaje_finalizadas = 0
-    return render_template('indicators.html', datos = conteo, espacios=conteo_espacios, promedio = prom_dias_fabrication.json(), porcentaje = porcentaje_finalizadas)
+    # Calcula el porcentaje de planes confirmados
+    if total_tareas > 0:
+        porcentaje_finalizadas = (result['finalizadas'] / total_tareas) * 100
+    else:
+        porcentaje_finalizadas = 0    
+    return render_template('indicators.html', datos = conteo, espacios=conteo_espacios, promedio = prom_dias_fabrication.json(), porcentaje = porcentaje_finalizadas, confirmados= confirmados, sin_confirmar= sin_confirmar)
 
 
 if __name__ == '__main__':
