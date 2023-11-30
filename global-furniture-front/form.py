@@ -546,7 +546,6 @@ def get_indicators():
                         conteo_espacios[espacio_seleccionado] += 1
                     else:
                         conteo_espacios[espacio_seleccionado] = 1
-    print(conteo_espacios)
 
     prom_dias_fabrication = requests.get(f"{base_url}/get_prom_dias")
     
