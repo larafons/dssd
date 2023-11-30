@@ -173,6 +173,10 @@ def submit_design():
         "mostrar": True
     }
     plazo_fabricacion= request.form.get('plazo_fabricacion')
+    fecha_lanzamiento= request.form.get('fecha_lanzamiento')
+    fecha_lanzamiento = datetime.datetime.strptime(fecha_lanzamiento, '%Y-%m-%d') 
+    if fecha_lanzamiento < datetime.datetime.now()+datetime.timedelta(days=int(plazo_fabricacion)):
+        return render_template('sweet_alert.html', message="error al designar la coleccion, la fecha de lanzamiento debe ser mayor al plazo de fabricacion", url="/designers")
     # Harcodeamos el nombre del pool
     response = requests.get(f"{base_url}/getprocessid/entrega-1")
     process_id = response.json()
@@ -231,6 +235,13 @@ def submit_materials(case=-1):
     # Setear las variables del proceso
     response0 = requests.put(f"{base_url}/setvariablebycase/{int(case_id)}/fecha_lanzamiento/{data['fecha_lanzamiento']}/java.lang.String")
     response = requests.put(f"{base_url}/setvariablebycase/{int(case_id)}/materials_cants/{materials_json}/java.lang.String")
+
+    plazo_fabricacion = requests.get(f"{base_url}/getvariablebycase/{int(case_id)}/plazo_fabricacion")
+    plazo_fabricacion = plazo_fabricacion.json()['plazo_fabricacion']
+    fecha_lanzamiento = data['fecha_lanzamiento']
+    fecha_lanzamiento = datetime.datetime.strptime(fecha_lanzamiento, '%Y-%m-%d') 
+    if fecha_lanzamiento < datetime.datetime.now()+datetime.timedelta(days=int(plazo_fabricacion)):
+        return render_template('sweet_alert.html', message="error al setear los materiales, la fecha de lanzamiento debe ser mayor al plazo de fabricacion", url="/operators")
     # Verificar si las variables se setearon correctamente
     if response.status_code != 200 or response0.status_code != 200:
         return "Error al establecer las variables del proceso"
