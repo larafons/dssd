@@ -524,10 +524,17 @@ def get_indicators():
             espacio_seleccionado = espacio_data.get('espacio_seleccionado')
             # Si el espacio no es nulo, lo cuento en el diccionario
             if espacio_seleccionado is not None:
-                if espacio_seleccionado in conteo_espacios:
-                    conteo_espacios[espacio_seleccionado] += 1
+                if espacio_seleccionado == 'null': 
+                    if 'Sin asignar' in conteo_espacios:
+                        conteo_espacios['Sin asignar'] =+1
+                    else:
+                        conteo_espacios['Sin asignar'] =1
                 else:
-                    conteo_espacios[espacio_seleccionado] = 1
+                    if espacio_seleccionado in conteo_espacios:
+                        conteo_espacios[espacio_seleccionado] += 1
+                    else:
+                        conteo_espacios[espacio_seleccionado] = 1
+    print(conteo_espacios)
 
     prom_dias_fabrication = requests.get(f"{base_url}/get_prom_dias")
     
