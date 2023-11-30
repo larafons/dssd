@@ -267,7 +267,8 @@ def submit_materials(case=-1):
                         proveedores_data = json.loads(proveedores['proveedores'])
                         return render_template('reserve_materials.html',proveedores=proveedores_data, case= case_id)
                     elif any(task for task in tasks_data if task["name"] == "Establecer materiales y cantidades" and task["state"] == "ready"):
-                        return render_template('materials.html', case= int(case_id))
+                        return render_template('sweet_alert.html', message="cantidad de materiales no disponible para la fecha ingresada, pruebe con otros materiales u otra coleccion", url= "/operators")
+
             else:
                 return "Error al consultar las tareas pendientes en Bonita."
         else:
